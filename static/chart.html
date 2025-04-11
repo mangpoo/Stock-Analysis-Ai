@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>주가 차트</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f9f9f9;
+    }
+    h2 {
+      text-align: center;
+      margin-top: 20px;
+    }
+    #chart {
+      width: 95%;
+      height: 500px;
+      margin: 0 auto;
+    }
+  </style>
+</head>
+<body>
+  <h2 id="title">📈 주가 차트</h2>
+  <div id="chart"></div>
+
+  <script>
+    // 🧠 URL 파라미터 추출
+    const pathParts = window.location.pathname.split('/');
+    const country = pathParts[2];
+    const ticker = pathParts[3];
+    const startDate = pathParts[4];
+    const endDate = pathParts[5];
+
+    // 통화 단위 설정
+    const currency = country === 'kr' ? 'KRW' : 'USD';
+    document.getElementById('title').innerText = `📈 ${ticker} (${country.toUpperCase()}) 주가 차트`;
+
+    // 차트 만들기
+    const chart = LightweightCharts.createChart(document.getElementById('chart'), {
+      width: document.getElementById('chart').clientWidth,
+      height: 500,
+      timeScale: {
+        timeVisible: true,
+        secondsVisible: false,
+      },
+    });
+
+    const candleSeries = chart.addCandlestickSeries();
+
+    // 🔗 API 요청
+    const apiUrl = `http://minjun0410.iptime.org:5000/${country}/${ticker}/${startDate}/${endDate}`;
+    fetch(apiUrl)
+      .then(res => res.json())
+      .then(data => {
+        const formatted = data.map(item => ({
+          time: item.date,
+          open: item.open,
+          high: item.high,
+          low: item.low,
+          close: item.close,
+        }));
+
+        // 데이터가 로드되면 차트에 데이터 적용
+        candleSeries.setData(formatted);
+
+        // 차트의 y축 라벨 포맷 설정 (통화 단위 붙이기)
+        chart.applyOptions({
+          priceScale: {
+            borderColor: '#ccc',
+            scaleMargins: {
+              top: 0.1,
+              bottom: 0.1,
+            },
+            formatter: (price) => `${price} ${currency}`,
+          },
+        });
+      })
+      .catch(err => {
+        console.error('데이터 가져오기 실패:', err);
+      });
+
+    // 반응형 처리
+    window.addEventListener('resize', () => {
+      chart.applyOptions({ width: document.getElementById('chart').clientWidth });
+    });
+  </script>
+</body>
+</html>

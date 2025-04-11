@@ -1,4 +1,5 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, send_from_directory
+from flask_cors import CORS
 import pandas as pd
 import json
 from pykrx import stock
@@ -8,6 +9,7 @@ import searcher
 
 search_obj = None
 app = Flask(__name__)
+CORS(app)
 app.config['JSON_AS_ASCII'] = False
 
 
@@ -74,8 +76,12 @@ def find(name):
         return jsonify({"error": "empty"})
 
 
+@app.route('/chart/<string:country>/<string:ticker>/<string:start_date>/<string:end_date>')
+def serve_chart(country, ticker, start_date, end_date):
+    return send_from_directory("static", "chart.html")
+
 
 if __name__ == '__main__':
-    search_obj = search.Searcher()
+    search_obj = searcher.Searcher()
     app.run(host = "0.0.0.0", port = 5000, debug=True)
 
