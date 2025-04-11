@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, send_from_directory
+from flask import Flask, jsonify, send_from_directory, render_template
 from flask_cors import CORS
 import pandas as pd
 import json
@@ -78,7 +78,8 @@ def find(name):
 
 @app.route('/chart/<string:country>/<string:ticker>/<string:start_date>/<string:end_date>')
 def serve_chart(country, ticker, start_date, end_date):
-    return send_from_directory("static", "chart.html")
+    stock_name = search_obj.get_name_by_ticker(country=country, ticker=ticker)
+    return render_template("chart.html", stock_name = stock_name)
 
 
 if __name__ == '__main__':

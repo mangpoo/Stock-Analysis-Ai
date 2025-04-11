@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <title>주가 차트</title>
+  <title>{{stock_name}} 주가 차트</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
   <style>
@@ -23,11 +23,10 @@
   </style>
 </head>
 <body>
-  <h2 id="title">📈 주가 차트</h2>
+  <h2 id="title"> 주가 차트 </h2>
   <div id="chart"></div>
 
   <script>
-    // 🧠 URL 파라미터 추출
     const pathParts = window.location.pathname.split('/');
     const country = pathParts[2];
     const ticker = pathParts[3];
@@ -36,19 +35,32 @@
 
     // 통화 단위 설정
     const currency = country === 'kr' ? 'KRW' : 'USD';
-    document.getElementById('title').innerText = `📈 ${ticker} (${country.toUpperCase()}) 주가 차트`;
+    document.getElementById('title').innerText = `{{ stock_name }} ${ticker} (${country.toUpperCase()}) 주가 차트`;
 
     // 차트 만들기
     const chart = LightweightCharts.createChart(document.getElementById('chart'), {
       width: document.getElementById('chart').clientWidth,
       height: 500,
       timeScale: {
-        timeVisible: true,
+        timeVisible: false,
         secondsVisible: false,
       },
     });
 
     const candleSeries = chart.addCandlestickSeries();
+
+    // 이동평균선 (MA) 시리즈 추가
+    const movingAvgSeries50 = chart.addLineSeries({
+      color: 'blue', // 50일선 색상
+      lineWidth: 0.5,
+      crosshairMarkerVisible: true,
+    });
+
+    const movingAvgSeries200 = chart.addLineSeries({
+      color: 'red', // 200일선 색상
+      lineWidth: 0.5,
+      crosshairMarkerVisible: true,
+    });
 
     // 🔗 API 요청
     const apiUrl = `http://minjun0410.iptime.org:5000/${country}/${ticker}/${startDate}/${endDate}`;
@@ -63,8 +75,16 @@
           close: item.close,
         }));
 
-        // 데이터가 로드되면 차트에 데이터 적용
+        // 차트에 캔들 데이터 추가
         candleSeries.setData(formatted);
+
+        // 50일, 200일 이동평균선 계산
+        const movingAvg50 = calculateMovingAverage(formatted, 50);
+        const movingAvg200 = calculateMovingAverage(formatted, 200);
+
+        // 이동평균선 데이터 차트에 추가
+        movingAvgSeries50.setData(movingAvg50);
+        movingAvgSeries200.setData(movingAvg200);
 
         // 차트의 y축 라벨 포맷 설정 (통화 단위 붙이기)
         chart.applyOptions({
@@ -74,7 +94,7 @@
               top: 0.1,
               bottom: 0.1,
             },
-            formatter: (price) => `${price} ${currency}`,
+            formatter: (price) => `${price.toFixed(0)} ${currency}`,
           },
         });
       })
@@ -86,6 +106,22 @@
     window.addEventListener('resize', () => {
       chart.applyOptions({ width: document.getElementById('chart').clientWidth });
     });
+
+    // 🧮 이동평균선 계산 함수 (단기, 장기)
+    function calculateMovingAverage(data, period) {
+      let movingAvgData = [];
+      for (let i = period - 1; i < data.length; i++) {
+        let sum = 0;
+        for (let j = 0; j < period; j++) {
+          sum += data[i - j].close;
+        }
+        movingAvgData.push({
+          time: data[i].time,
+          value: sum / period,
+        });
+      }
+      return movingAvgData;
+    }
   </script>
 </body>
 </html>

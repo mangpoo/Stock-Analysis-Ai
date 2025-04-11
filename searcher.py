@@ -5,7 +5,7 @@ from flask import jsonify
 
 class Searcher:
     def __init__(self):
-        self.conn = sqlite3.connect("../stockInfo.db", check_same_thread=False)  
+        self.conn = sqlite3.connect("stockInfo.db", check_same_thread=False)  
         self.cur = self.conn.cursor()
         print("Searcher Ready")
 
@@ -60,6 +60,29 @@ class Searcher:
         df = pd.DataFrame(result)
         df.columns = ['ticker', 'stock_name', 'market_type']
         return df
+    
+    def get_name_by_ticker(self, country, ticker):
+        stock_name = None
+
+        if(country == "us"):
+            for market_type in ["amex", "nsdq", "nyse"]:
+                self.cur.execute(f"""select stock_name from {market_type}_stock where ticker = '{ticker}';""")
+                temp = self.cur.fetchall()
+                if(len(temp) != 0):
+                    stock_name = temp[0][0]
+                    break        
+        elif(country == 'kr'):
+            self.cur.execute(f"""select stock_name from kr_stock where ticker = '{ticker}';""")
+            temp = self.cur.fetchall()
+            if(len(temp) != 0):
+                stock_name = temp[0][0]
+        
+        return stock_name
+
+
+        
         
 # s = Searcher()
-# s.searcher(input())
+# print(s.searcher(input()))
+# print(s.get_name_by_ticker("us", "AAPL"))
+# print(s.get_name_by_ticker("kr", "005930"))
