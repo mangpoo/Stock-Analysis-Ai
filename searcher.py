@@ -65,6 +65,7 @@ class Searcher:
         stock_name = None
 
         if(country == "us"):
+            ticker = ticker.upper()
             for market_type in ["amex", "nsdq", "nyse"]:
                 self.cur.execute(f"""select stock_name from {market_type}_stock where ticker = '{ticker}';""")
                 temp = self.cur.fetchall()
@@ -84,5 +85,5 @@ class Searcher:
         
 # s = Searcher()
 # print(s.searcher(input()))
-# print(s.get_name_by_ticker("us", "AAPL"))
+# print(s.get_name_by_ticker("us", "intc"))
 # print(s.get_name_by_ticker("kr", "005930"))
