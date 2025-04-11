@@ -1,0 +1,73 @@
+/* 차트 & 변동순을 포함하는 전체 박스 */
+.stock-table {
+  background-color: #ffffff;
+  padding: 20px;
+  border-radius: 15px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  margin-bottom: 30px;
+}
+
+/* 제목 영역 */
+.title {
+  display: flex;
+}
+
+.title .title-1 {
+  margin-left: 0.5%;
+}
+
+.title .title-2 {
+  margin-left: 66.5%;
+}
+
+/* 내부 테이블을 가로로 나누기 */
+.table-container {
+  display: flex;
+  align-items: flex-start; /* 자식들이 수평으로 배치 */
+  justify-content: space-between;
+  height: 600px; /* 고정된 높이 설정 */
+  position: relative; /* 자식 요소인 세로선의 위치를 설정하기 위해 필요 */
+}
+
+/* 차트 테이블 */
+.chart-table {
+  width: 65%;
+}
+
+/* 변동순 테이블 */
+.change-rank {
+  width: 30%;
+}
+
+/* 세로선 */
+.vertical-line {
+  width: 1px;
+  background-color: #ccc;
+  position: absolute;
+  left: 67.5%; /* 차트와 변동순 테이블 사이에 세로선 위치 */
+  top: -20px;
+  bottom: 10%;
+  height: 100%; /* 세로선의 높이를 100%로 설정 */
+}
+
+/* 테이블 스타일 */
+.stock-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.stock-table th,
+.stock-table td {
+  padding: 12px;
+  border-bottom: 1px solid #f0f0f0;
+  text-align: left;
+}
+
+/* 등락률 색상 */
+.stock-table .negative {
+  color: blue;
+}
+
+.stock-table .positive {
+  color: red;
+}
