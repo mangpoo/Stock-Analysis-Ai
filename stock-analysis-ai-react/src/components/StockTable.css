@@ -5,62 +5,123 @@
   border-radius: 15px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   margin-bottom: 30px;
+  overflow-y: auto;
+  /* table-container가 스크롤될 수 있으므로, stock-table 자체 높이는 auto 또는 content에 맞게 */
 }
 
 /* 제목 영역 */
 .title {
   display: flex;
+  margin-bottom: 15px;
 }
 
 .title .title-1 {
   margin-left: 0.5%;
+  font-size: 1.2em;
+  font-weight: bold;
 }
 
 .title .title-2 {
-  margin-left: 66.5%;
+  margin-left: 67%;
+  font-size: 1.2em;
+  font-weight: bold;
 }
+
 
 /* 내부 테이블을 가로로 나누기 */
 .table-container {
   display: flex;
-  align-items: flex-start; /* 자식들이 수평으로 배치 */
+  align-items: flex-start;
   justify-content: space-between;
-  height: 600px; /* 고정된 높이 설정 */
-  position: relative; /* 자식 요소인 세로선의 위치를 설정하기 위해 필요 */
+  height: 600px; /* 고정 높이 설정 (테이블 내용이 많을 경우 스크롤) */
+  position: relative;
+  /* overflow-y: auto; */ /* 테이블 자체 스크롤 대신 chart-table 내부 스크롤 관리 */
 }
 
-/* 차트 테이블 */
+/* 차트 테이블 영역 (테이블 + 페이지네이션 포함) */
 .chart-table {
   width: 65%;
+  padding-right: 15px;
+  display: flex; /* 테이블과 페이지네이션을 수직 정렬 */
+  flex-direction: column;
+  height: 100%; /* 부모 높이(600px)를 채움 */
+}
+
+/* 변동순 테이블 영역 */
+.change-rank {
+  width: 30%;
+  padding-left: 15px;
+  height: 100%; /* 부모 높이(600px)를 채움 */
+  overflow-y: auto; /* 변동순 테이블 내용 많을 경우 자체 스크롤 */
+}
+
+/* 차트 테이블 스크롤 처리 (테이블 영역만) */
+.chart-table table {
+    width: 100%;
+    border-collapse: collapse;
+    /* flex-grow: 1; */ /* 테이블이 남은 공간 차지하도록 */
+    /* overflow-y: auto; */ /* 테이블 내용이 많을 경우 스크롤되도록 수정 필요 */
+    /* display: block; */ /* thead 고정을 위해 block 또는 table 사용 */
+}
+
+.chart-table > div:has(> table) { /* 테이블을 감싸는 div (필요시 추가) */
+    flex-grow: 1;
+    overflow-y: auto; /* 테이블 내용만 스크롤 되도록 */
+    position: relative; /* thead 고정을 위해 */
 }
 
 /* 변동순 테이블 */
-.change-rank {
-  width: 30%;
+.change-rank table {
+    width: 100%;
+    border-collapse: collapse;
 }
+
 
 /* 세로선 */
 .vertical-line {
   width: 1px;
-  background-color: #ccc;
+  background-color: #e0e0e0;
   position: absolute;
-  left: 67.5%; /* 차트와 변동순 테이블 사이에 세로선 위치 */
-  top: -20px;
-  bottom: 10%;
-  height: 100%; /* 세로선의 높이를 100%로 설정 */
+  /* left 값은 chart-table의 최종 너비에 따라 조정 필요 */
+  left: calc(65% + 40.5px); /* 초기값, 필요시 미세 조정 */
+  top: 0;
+  bottom: 0;
+  height: 100%;
 }
 
 /* 테이블 스타일 */
-.stock-table table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
 .stock-table th,
 .stock-table td {
-  padding: 12px;
+  padding: 10px 12px;
   border-bottom: 1px solid #f0f0f0;
   text-align: left;
+  vertical-align: middle;
+  font-size: 0.9em; /* 공간 확보를 위해 폰트 약간 줄임 */
+  white-space: nowrap; /* 내용이 길어도 줄바꿈 방지 (필요시) */
+}
+
+.stock-table th {
+  font-weight: 600;
+  color: #555;
+  background-color: #fafafa;
+  position: sticky;
+  top: 0; /* 스크롤 시 상단에 고정 (부모에 overflow 설정 필요) */
+  z-index: 1;
+}
+
+/* 차트 테이블 thead 고정 (테이블 감싸는 div에 overflow 적용 시) */
+.chart-table > div:has(> table) thead th {
+    position: sticky;
+    top: 0;
+    background-color: #fafafa; /* 배경색 필수 */
+    z-index: 1;
+}
+/* 변동순 테이블 thead 고정 */
+.change-rank thead th {
+    position: sticky;
+    top: 0;
+    background-color: #fafafa; /* 배경색 필수 */
+    z-index: 1;
 }
 
 /* 등락률 색상 */
@@ -70,4 +131,123 @@
 
 .stock-table .positive {
   color: red;
+}
+
+/* 행 호버 효과 */
+.stock-table tbody .stock-row:hover {
+  background-color: #f5f5f5;
+  cursor: pointer;
+  transition: background-color 0.15s ease-in-out;
+}
+
+/* --- 순위 컬럼 스타일 --- */
+.stock-table .rank-header {
+  width: 30px; /* 순위 컬럼 너비 */
+  text-align: center;
+}
+.stock-table .rank-cell {
+  width: 40px;
+  text-align: center;
+  color: #666; /* 순위 숫자 색상 */
+  font-size: 0.85em; /* 순위 숫자 크기 */
+}
+
+/* --- 찜 아이콘 관련 스타일 --- */
+.stock-table .favorite-header {
+  text-align: center;
+  width: 50px;
+}
+.stock-table .favorite-cell {
+  text-align: center;
+  width: 50px;
+}
+.stock-table .favorite-icon {
+  cursor: pointer;
+  color: #ccc;
+  font-size: 1.2em;
+  transition: color 0.2s ease, transform 0.2s ease;
+  display: inline-block;
+}
+.stock-table .favorite-icon:hover {
+  color: #ff8a8a;
+  transform: scale(1.1);
+}
+.stock-table .favorite-icon.active {
+  color: red;
+}
+
+/* --- 페이지네이션 스타일 (이미지 디자인 반영) --- */
+.pagination-controls {
+  display: flex;
+  justify-content: flex-end; /* 오른쪽 정렬 */
+  align-items: center;
+  padding: 20px 0 10px 0; /* 위아래 여백 조정 */
+  flex-shrink: 0;
+}
+
+/* 공통 버튼/스팬 스타일 초기화 및 기본 설정 */
+.pagination-controls button,
+.pagination-controls span {
+  background-color: transparent; /* 배경 제거 */
+  border: none; /* 테두리 제거 */
+  padding: 5px; /* 내부 여백 (클릭 영역 확보) */
+  margin: 0 8px; /* 좌우 여백 (간격) */
+  color: #555; /* 기본 텍스트 색상 (진한 회색) */
+  font-size: 1em; /* 기본 폰트 크기 */
+  cursor: pointer;
+  display: inline-flex; /* 내부 요소 정렬 위해 */
+  align-items: center;
+  justify-content: center;
+  min-width: 30px; /* 최소 너비 */
+  height: 30px; /* 높이 */
+  border-radius: 50%; /* 기본은 원형 (활성 상태에서만 보이도록) */
+  transition: background-color 0.2s ease, color 0.2s ease; /* 부드러운 전환 효과 */
+}
+
+/* 비활성화된 버튼 (<, >) */
+.pagination-controls button:disabled {
+  color: #ccc; /* 비활성화 시 연한 회색 */
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* 호버 효과 (비활성화, 활성 상태 제외) */
+.pagination-controls button:not(:disabled):not(.active):hover {
+  color: #007bff; /* 호버 시 색상 변경 (예: 파란색) */
+  /* background-color: #f0f0f0; */ /* 원형 배경 대신 색상 변경만 */
+}
+
+/* 활성 페이지 버튼 (숫자) */
+.pagination-controls button.active {
+  background-color: #e9e9e9; /* 활성 페이지 배경색 (연한 회색 원) */
+  color: #333; /* 활성 페이지 텍스트 색상 (더 진하게) */
+  font-weight: bold; /* 굵게 */
+  cursor: default; /* 현재 페이지는 클릭 의미 없음 */
+}
+
+/* 이전(<), 다음(>) 버튼 */
+.pagination-controls button:first-of-type, /* 이전 버튼 */
+.pagination-controls button:last-of-type { /* 다음 버튼 */
+  color: #aaa; /* 기본 화살표 색상 (연한 회색) */
+  font-weight: bold; /* 약간 굵게 */
+}
+/* 비활성화 시 색상 유지 (위 :disabled 규칙이 우선 적용됨) */
+.pagination-controls button:disabled:first-of-type,
+.pagination-controls button:disabled:last-of-type {
+   color: #ccc;
+}
+/* 호버 시 (비활성화 제외) */
+.pagination-controls button:not(:disabled):first-of-type:hover,
+.pagination-controls button:not(:disabled):last-of-type:hover {
+   color: #555; /* 호버 시 진하게 */
+}
+
+
+/* 생략 부호 (...) */
+.pagination-controls span {
+  color: #555; /* 숫자와 동일한 색상 */
+  cursor: default; /* 클릭 불가 */
+  border-radius: 0; /* 원형 배경 제거 */
+  padding: 5px 0; /* 좌우 패딩 제거 */
+  margin: 0 5px; /* 좌우 여백 약간 줄임 */
 }
