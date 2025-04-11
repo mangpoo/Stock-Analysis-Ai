@@ -79,7 +79,8 @@ def find(name):
 @app.route('/chart/<string:country>/<string:ticker>/<string:start_date>/<string:end_date>')
 def serve_chart(country, ticker, start_date, end_date):
     stock_name = search_obj.get_name_by_ticker(country=country, ticker=ticker)
-    return render_template("chart.html", stock_name = stock_name)
+    currency = 'KRW' if country == 'kr' else 'USD'
+    return render_template("chart.html", stock_name = stock_name, currency =currency)
 
 
 if __name__ == '__main__':
