@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <title>{{ stock_name }} 주가 차트</title>
+  <title>{{ stock_name }}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
   <style>
@@ -13,20 +13,29 @@
     }
     h2 {
       text-align: center;
-      margin-top: 20px;
+      margin-top: 5px;
     }
     #chart {
-      width: 95%;
-      height: 500px;
+      width: 100%;
+      height: 100%;
       margin: 0 auto;
     }
   </style>
 </head>
 <body>
-  <h2 id="title">📈 {{ stock_name }} 주가 차트</h2>
+  <h2 id="title">{{ stock_name }}</h2>
   <div id="chart"></div>
 
   <script>
+
+    function postHeightToParent() {
+      const height = document.documentElement.scrollHeight;
+      window.parent.postMessage({ iframeHeight: height }, '*');
+    }
+
+    window.addEventListener('load', postHeightToParent);
+    window.addEventListener('resize', postHeightToParent);
+
     //  URL 파라미터 추출
     const pathParts = window.location.pathname.split('/');
     const country = pathParts[2];
@@ -39,12 +48,13 @@
     
     
   
-    document.getElementById('title').innerText = `${"{{ stock_name }}"} (${ticker}) (${country.toUpperCase()}) 주가 차트`;
+    document.getElementById('title').innerText = `${"{{ stock_name }}"} (${ticker}) (${country.toUpperCase()})`;
 
     // 차트 만들기
     const chart = LightweightCharts.createChart(document.getElementById('chart'), {
       width: document.getElementById('chart').clientWidth,
       height: 500,
+      // height: document.getElementById('chart').clientHeight,
       timeScale: {
         timeVisible: false,
         secondsVisible: false,

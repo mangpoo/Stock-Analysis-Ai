@@ -6,7 +6,6 @@ from flask import jsonify
 class Searcher:
     def __init__(self):
         self.conn = sqlite3.connect("stockInfo.db", check_same_thread=False)  
-        self.cur = self.conn.cursor()
         print("Searcher Ready")
 
     def __check_with_korean(self, input_string : str):
@@ -14,8 +13,6 @@ class Searcher:
             return True
         else:
             return False
-
-
 
     def searcher(self, input_string : str):
         print(input_string)
@@ -27,10 +24,11 @@ class Searcher:
 
 
     def __kr_search(self, input_string : str):
-        self.cur.execute(f"""select ticker, stock_name, market_Type
+        cur = self.conn.cursor()
+        cur.execute(f"""select ticker, stock_name, market_Type
                         from kr_stock
                         where stock_name like '%{input_string}%';""")
-        data = self.cur.fetchall()
+        data = cur.fetchall()
         if(len(data) == 0): return None
 
 
@@ -41,17 +39,18 @@ class Searcher:
 
 
     def __en_search(self, input_string : str):
-        self.cur.execute(f"""select kr_en_names.ticker, en_stock_name, market_type 
+        cur = self.conn.cursor()
+        cur.execute(f"""select kr_en_names.ticker, en_stock_name, market_type 
                         from kr_en_names, kr_stock 
                         where en_stock_name like '%{input_string}%' and kr_stock.ticker = kr_en_names.ticker;""")
-        kr = self.cur.fetchall()
+        kr = cur.fetchall()
 
         us = list()
         for market_type in ["amex", "nsdq", "nyse"]:
-            self.cur.execute(f"""select ticker, stock_name, market_type
+            cur.execute(f"""select ticker, stock_name, market_type
                             from {market_type}_stock
                             where stock_name like '%{input_string}%';""")
-            us.append(self.cur.fetchall())
+            us.append(cur.fetchall())
         
         result = kr + us[0] + us[1] + us[2]
         if(len(result) == 0): return None
@@ -63,18 +62,19 @@ class Searcher:
     
     def get_name_by_ticker(self, country, ticker):
         stock_name = None
+        cur = self.conn.cursor()
 
         if(country == "us"):
             ticker = ticker.upper()
             for market_type in ["amex", "nsdq", "nyse"]:
-                self.cur.execute(f"""select stock_name from {market_type}_stock where ticker = '{ticker}';""")
-                temp = self.cur.fetchall()
+                cur.execute(f"""select stock_name from {market_type}_stock where ticker = '{ticker}';""")
+                temp = cur.fetchall()
                 if(len(temp) != 0):
                     stock_name = temp[0][0]
                     break        
         elif(country == 'kr'):
-            self.cur.execute(f"""select stock_name from kr_stock where ticker = '{ticker}';""")
-            temp = self.cur.fetchall()
+            cur.execute(f"""select stock_name from kr_stock where ticker = '{ticker}';""")
+            temp = cur.fetchall()
             if(len(temp) != 0):
                 stock_name = temp[0][0]
         
