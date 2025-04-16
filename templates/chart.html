@@ -27,7 +27,7 @@
   <div id="chart"></div>
 
   <script>
-    // 🧠 URL 파라미터 추출
+    //  URL 파라미터 추출
     const pathParts = window.location.pathname.split('/');
     const country = pathParts[2];
     const ticker = pathParts[3];
@@ -36,14 +36,17 @@
 
     // 통화 단위 설정
     const currency = "{{ currency }}";  // 서버에서 전달된 currency 값을 JavaScript에서 사용
-    document.getElementById('title').innerText = `📈 ${"{{ stock_name }}"} (${ticker}) (${country.toUpperCase()}) 주가 차트`;
+    
+    
+  
+    document.getElementById('title').innerText = `${"{{ stock_name }}"} (${ticker}) (${country.toUpperCase()}) 주가 차트`;
 
     // 차트 만들기
     const chart = LightweightCharts.createChart(document.getElementById('chart'), {
       width: document.getElementById('chart').clientWidth,
       height: 500,
       timeScale: {
-        timeVisible: true,
+        timeVisible: false,
         secondsVisible: false,
       },
       priceScale: {
@@ -52,21 +55,16 @@
           top: 0.1,
           bottom: 0.1,
         },
-        // 가격 포맷터 설정
-        // priceFormatter: (price) => {
-        //   return `${Math.round(price)} ${currency}`; // 소수점 없애고 정수로만 가격 표시
-        // },
       },
     });
 
 
-    //test
     // Get the current users primary locale
     const currentLocale = window.navigator.languages[0];
     // Create a number format using Intl.NumberFormat
     const myPriceFormatter = Intl.NumberFormat(currentLocale, {
         style: 'currency',
-        currency: "{{ currency }}", // Currency for data points
+        currency: currency, // Currency for data points
     }).format;
     //
     
@@ -92,7 +90,7 @@
       crosshairMarkerVisible: true,
     });
 
-    // 🔗 API 요청
+    // API 요청
     // const apiUrl = `http://minjun0410.iptime.org:5000/${country}/${ticker}/${startDate}/${endDate}`; // not local
     const apiUrl = `http://localhost:5000/${country}/${ticker}/${startDate}/${endDate}`; // local
 
@@ -127,7 +125,7 @@
       chart.applyOptions({ width: document.getElementById('chart').clientWidth });
     });
 
-    // 🧮 이동평균선 계산 함수 (단기, 장기)
+    // 이동평균선 계산 함수 (단기, 장기)
     function calculateMovingAverage(data, period) {
       let movingAvgData = [];
       for (let i = period - 1; i < data.length; i++) {
