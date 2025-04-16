@@ -75,7 +75,9 @@
     });
 
     // 🔗 API 요청
-    const apiUrl = `http://minjun0410.iptime.org:5000/${country}/${ticker}/${startDate}/${endDate}`;
+    // const apiUrl = `http://minjun0410.iptime.org:5000/${country}/${ticker}/${startDate}/${endDate}`; // not local
+    const apiUrl = `http://localhost:5000/${country}/${ticker}/${startDate}/${endDate}`; // local
+
     fetch(apiUrl)
       .then(res => res.json())
       .then(data => {
