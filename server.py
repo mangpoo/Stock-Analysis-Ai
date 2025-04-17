@@ -1,9 +1,10 @@
-from flask import Flask, jsonify, render_template
+from flask import Flask, jsonify, render_template, send_file
 from flask_cors import CORS
 import pandas as pd
 import json
 from pykrx import stock
 import yfinance as yf
+import os
 
 import searcher
 
@@ -81,6 +82,19 @@ def serve_chart(country, ticker, start_date, end_date):
     stock_name = search_obj.get_name_by_ticker(country=country, ticker=ticker)
     currency = 'KRW' if country == 'kr' else 'USD'
     return render_template("chart.html", stock_name = stock_name, currency =currency)
+
+
+@app.route('/logo/<string:country>/<string:ticker>')
+def logo(country, ticker):
+    path = f"static/logo/{country.lower()}/" 
+    img = f"static/logo/country/{country}.png"
+
+    if(country == 'us'):
+        files = os.listdir("static/logo/us")
+        if(ticker + ".png" in files):
+            img = path + ticker + ".png"
+    
+    return send_file(img, mimetype="image/png")
 
 
 if __name__ == '__main__':
