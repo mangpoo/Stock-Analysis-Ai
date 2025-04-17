@@ -22,7 +22,7 @@ GET /find/문자열
 
 예시  
 ```
-http://localhost:5000/find/005930  
+http://localhost:5000/find/삼성  
 http://localhost:5000/find/Samsung
 ```
 
@@ -41,7 +41,7 @@ GET /logo/<country>/<ticker>
 http://localhost:5000/logo/kr
 http://localhost:5000/logo/us
 
-http://localhost:5000/logo/kr/삼성전자  
+http://localhost:5000/logo/kr/005930  
 http://localhost:5000/logo/us/INTC
 ```
 
