@@ -22,7 +22,7 @@ GET /find/문자열
 
 예시  
 ```
-http://localhost:5000/find/삼성전자  
+http://localhost:5000/find/005930  
 http://localhost:5000/find/Samsung
 ```
 
