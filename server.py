@@ -101,10 +101,9 @@ def logo(country, ticker):
             img = path + ticker + ".png"
     
     else: # KR
-        # files = os.listdir("static/logo/kr")
-        # if(ticker + ".png" in files):
-        #     img = path + ticker + ".png"
-        pass
+        files = os.listdir("static/logo/kr")
+        if(ticker + ".png" in files):
+            img = path + ticker + ".png"
     
     return send_file(img, mimetype="image/png")
 
