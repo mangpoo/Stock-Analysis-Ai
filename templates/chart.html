@@ -17,7 +17,7 @@
     }
     #chart {
       width: 100%;
-      height: 100%;
+      height: 500px;
       margin: 0 auto;
     }
   </style>
@@ -53,8 +53,7 @@
     // 차트 만들기
     const chart = LightweightCharts.createChart(document.getElementById('chart'), {
       width: document.getElementById('chart').clientWidth,
-      height: 500,
-      // height: document.getElementById('chart').clientHeight,
+      height: document.getElementById('chart').clientHeight,
       timeScale: {
         timeVisible: false,
         secondsVisible: false,
