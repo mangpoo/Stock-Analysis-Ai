@@ -89,10 +89,18 @@ def logo(country, ticker):
     path = f"static/logo/{country.lower()}/" 
     img = f"static/logo/country/{country}.png"
 
-    if(country == 'us'):
+    if(country == 'us'): # US
         files = os.listdir("static/logo/us")
+        ticker = ticker.upper()
         if(ticker + ".png" in files):
             img = path + ticker + ".png"
+    
+    else: # KR
+        # files = os.listdir("static/logo/kr")
+        # if(ticker + ".png" in files):
+        #     img = path + ticker + ".png"
+        pass
+    
     
     return send_file(img, mimetype="image/png")
 
