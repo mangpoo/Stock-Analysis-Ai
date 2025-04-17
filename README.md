@@ -29,20 +29,25 @@ http://localhost:5000/find/Samsung
 한국어 또는 영어 종목명을 검색하면 관련 주식 정보를 JSON으로 반환합니다.
 
 ---
-### 2. 주식 로고 이미지
+### 2. 주식 로고, 국가 이미지
 
 ```
+GET /logo/<country>/
 GET /logo/<country>/<ticker>
 ```
 
 예시  
 ```
+http://localhost:5000/logo/kr
+http://localhost:5000/logo/us
+
 http://localhost:5000/logo/kr/삼성전자  
 http://localhost:5000/logo/us/INTC
 ```
 
 해당 티커의 이미지를 반환합니다.
 만일 이미지가 없는 경우 해당 국가의 기본 이미지를 반환합니다.(현재 미국 주식 로고만 존재)
+티커의 입력이 없으면 해당 국가의 기본 이미지를 반환합니다.
 
 ---
 

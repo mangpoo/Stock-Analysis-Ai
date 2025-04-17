@@ -84,6 +84,11 @@ def serve_chart(country, ticker, start_date, end_date):
     return render_template("chart.html", stock_name = stock_name, currency =currency)
 
 
+@app.route('/logo/<string:country>')
+def country_logo(country):
+    img = f"static/logo/country/{country}.png"    
+    return send_file(img, mimetype="image/png")
+
 @app.route('/logo/<string:country>/<string:ticker>')
 def logo(country, ticker):
     path = f"static/logo/{country.lower()}/" 
@@ -100,7 +105,6 @@ def logo(country, ticker):
         # if(ticker + ".png" in files):
         #     img = path + ticker + ".png"
         pass
-    
     
     return send_file(img, mimetype="image/png")
 
