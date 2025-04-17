@@ -29,8 +29,24 @@ http://localhost:5000/find/Samsung
 한국어 또는 영어 종목명을 검색하면 관련 주식 정보를 JSON으로 반환합니다.
 
 ---
+### 2. 주식 로고 이미지
 
-### 2. 주가 데이터 조회 (JSON 반환)
+```
+GET /logo/<country>/<ticker>
+```
+
+예시  
+```
+http://localhost:5000/logo/kr/삼성전자  
+http://localhost:5000/logo/us/INTC
+```
+
+해당 티커의 이미지를 반환합니다.
+만일 이미지가 없는 경우 해당 국가의 기본 이미지를 반환합니다.
+
+---
+
+### 3. 주가 데이터 조회 (JSON 반환)
 
 ```
 GET /<country>/<ticker>/<fromDate>/<toDate>
@@ -49,7 +65,7 @@ http://localhost:5000/us/AAPL/20230101/20241231
 
 ---
 
-### 3. 주가 차트 (HTML 시각화)
+### 4. 주가 차트 (HTML 시각화)
 
 ```
 GET /chart/<country>/<ticker>/<fromDate>/<toDate>
