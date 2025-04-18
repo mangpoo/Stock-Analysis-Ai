@@ -91,7 +91,7 @@
 
     // API 요청
     // const apiUrl = `http://minjun0410.iptime.org:5000/${country}/${ticker}/${startDate}/${endDate}`; // not local
-    const apiUrl = `http://172.17.153.114:5000/${country}/${ticker}/${startDate}/${endDate}`; // local
+    const apiUrl = `http://localhost:5000/${country}/${ticker}/${startDate}/${endDate}`; // local
 
     fetch(apiUrl)
       .then(res => res.json())

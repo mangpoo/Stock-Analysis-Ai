@@ -9,11 +9,15 @@ class Searcher:
         self.conn = sqlite3.connect("stockInfo.db", check_same_thread=False)  
         print("Searcher Ready")
 
+
+
     def __check_with_korean(self, input_string : str):
         if re.search("[가-힣]", input_string):
             return True
         else:
             return False
+
+
 
     def searcher(self, input_string : str):
         print(input_string)
@@ -38,6 +42,7 @@ class Searcher:
         return df
 
 
+
     def __en_search(self, input_string : str):
         cur = self.conn.cursor()
         cur.execute(f"""select kr_en_names.ticker, en_stock_name, market_type 
@@ -60,6 +65,8 @@ class Searcher:
         df.columns = ['ticker', 'stock_name', 'market_type']
         return df
     
+
+
     def get_name_by_ticker(self, country, ticker):
         stock_name = None
         cur = self.conn.cursor()
@@ -81,6 +88,7 @@ class Searcher:
         return stock_name
     
     
+
     def kr_get_recommend_stocks(self) -> pd.DataFrame:
         cur = self.conn.cursor()
         
@@ -91,6 +99,8 @@ class Searcher:
         df.columns = ['ticker', 'stock_name','market_capitalization']
 
         return df
+
+
 
     def us_get_recommend_stocks(self) -> pd.DataFrame:
         cur = self.conn.cursor()
@@ -108,7 +118,6 @@ class Searcher:
         df.reset_index(inplace=True)
         df.drop("index", axis = 1, inplace=True)
         return df.head(110)
-
 
 
 

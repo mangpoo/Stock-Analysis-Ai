@@ -77,7 +77,9 @@ def find(name):
     except Exception as e:
         return jsonify({"error": "empty"})
 
-@app.route('/changerate/<string:country>/<string:ticker>')
+
+
+@app.route('/changerate/<string:country>/<string:ticker>', methods=['GET'])
 def get_change_rate(country, ticker):
 
     if(country == 'kr'):
@@ -117,7 +119,8 @@ def get_change_rate(country, ticker):
             return jsonify({"error" : "empty"})
 
 
-@app.route('/recommend/<string:country>')
+
+@app.route('/recommend/<string:country>', methods=['GET'])
 def get_recommend(country):
     if(country == "kr"): # KR
         try:
@@ -140,19 +143,22 @@ def get_recommend(country):
             return jsonify({"error" : "empty"})
 
 
-@app.route('/chart/<string:country>/<string:ticker>/<string:start_date>/<string:end_date>')
+@app.route('/chart/<string:country>/<string:ticker>/<string:start_date>/<string:end_date>', methods=['GET'])
 def serve_chart(country, ticker, start_date, end_date):
     stock_name = search_obj.get_name_by_ticker(country=country, ticker=ticker)
     currency = 'KRW' if country == 'kr' else 'USD'
     return render_template("chart.html", stock_name = stock_name, currency =currency)
 
 
-@app.route('/logo/<string:country>')
+
+@app.route('/logo/<string:country>', methods=['GET'])
 def country_logo(country):
     img = f"static/logo/country/{country}.png"    
     return send_file(img, mimetype="image/png")
 
-@app.route('/logo/<string:country>/<string:ticker>')
+
+
+@app.route('/logo/<string:country>/<string:ticker>', methods=['GET'])
 def logo(country, ticker):
     path = f"static/logo/{country.lower()}/" 
     img = f"static/logo/country/{country}.png"
