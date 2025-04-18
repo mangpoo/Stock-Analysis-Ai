@@ -1,0 +1,123 @@
+/* AppLayout.css */
+
+.app-container {
+    display: flex;
+    min-height: 100vh;
+    /* overflow-x: hidden; */ /* 가로 스크롤 방지 - 필요에 따라 사용 */
+  }
+  
+  .main-content {
+    flex-grow: 1; /* 남은 공간을 모두 차지 */
+    margin-left: 80px; /* 고정된 Sidebar 너비만큼 왼쪽 여백 */
+    padding: 20px;
+    transition: margin-right 0.3s ease-in-out; /* 컨텐츠 밀림 애니메이션 (옵션) */
+  }
+  
+  /* --- 사이드 패널 공통 스타일 --- */
+  .side-panel {
+    position: fixed; /* 화면 기준으로 고정 */
+    top: 0;
+    right: 0; /* 오른쪽에 붙임 */
+    bottom: 0; /* == height: 100% */
+    width: 300px; /* 패널 너비 지정 */
+    background-color: #ffffff; /* 배경색 */
+    box-shadow: -2px 0 8px rgba(0, 0, 0, 0.15); /* 왼쪽에 그림자 효과 */
+    z-index: 1000; /* 다른 요소들보다 위에 보이도록 설정 */
+  
+    /* 애니메이션 준비 */
+    transform: translateX(100%); /* 초기 상태: 오른쪽 화면 밖으로 완전히 이동 */
+    transition: transform 0.3s ease-in-out; /* transform 속성 변경 시 부드럽게 애니메이션 */
+  
+    display: flex; /* 내부 요소 정렬을 위해 flex 사용 */
+    flex-direction: column; /* 헤더와 컨텐츠를 세로로 배치 */
+  }
+  
+  /* 패널이 열렸을 때 (open 클래스가 추가됐을 때) */
+  .side-panel.open {
+    transform: translateX(0); /* 오른쪽 화면 안으로 완전히 들어오도록 이동 */
+  }
+  
+  /* --- 패널 내부 스타일 --- */
+  .panel-header {
+    display: flex;
+    justify-content: space-between; /* 제목과 닫기 버튼을 양 끝으로 */
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid #e0e0e0; /* 헤더 구분선 */
+    flex-shrink: 0; /* 헤더 크기 고정 */
+  }
+  
+  .panel-header h2 {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+  }
+  
+  .close-button {
+    background: none;
+    border: none;
+    font-size: 1.5rem; /* X 버튼 크기 */
+    cursor: pointer;
+    padding: 0 5px;
+    line-height: 1;
+    color: #555;
+  }
+  .close-button:hover {
+    color: #000;
+  }
+  
+  .panel-content {
+    padding: 20px;
+    flex-grow: 1; /* 남은 공간을 모두 차지 */
+    overflow-y: auto; /* 내용이 많으면 스크롤 생성 */
+  }
+  
+  .panel-content p {
+    color: #666;
+    text-align: center;
+    margin-bottom: 15px;
+  }
+  
+  .panel-content ul {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 20px 0;
+  }
+  
+  .panel-content li {
+    padding: 10px 5px;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 0.9rem;
+    /* 추가적인 주식 정보 스타일링 가능 */
+  }
+  .panel-content li:last-child {
+    border-bottom: none;
+  }
+  
+  .add-button {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    text-align: center;
+    font-size: 1rem;
+    margin-top: auto; /* 버튼을 맨 아래로 내릴 수 있음 (flex-grow와 함께 사용 시) */
+  }
+  
+  .add-button:hover {
+    background-color: #0056b3;
+  }
+  
+  /* --- 선택사항: 패널이 열렸을 때 메인 컨텐츠를 밀어내기 --- */
+  /* 만약 오버레이가 아닌 컨텐츠를 미는 효과를 원한다면 아래 주석 해제 */
+  /*
+  .main-content.panel-visible {
+    margin-right: 300px; // 패널 너비만큼 오른쪽 여백 추가
+  }
+  */
+  /* 이 경우 AppLayout.jsx에서 main 태그에 클래스를 동적으로 추가해야 함 */
+  /* <main className={`main-content ${isPanelOpen ? 'panel-visible' : ''}`}> */

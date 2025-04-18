@@ -7,94 +7,92 @@ export default function StockTable() {
   const [currentPage, setCurrentPage] = useState(1);
   const [allChartData, setAllChartData] = useState([]);
   const [allChangeRankData, setAllChangeRankData] = useState([]);
+  const [loading, setLoading] = useState(true); // 로딩 상태 추가
+  const [error, setError] = useState(null); // 에러 상태 추가
 
   // --- 상수 ---
-  const ITEMS_PER_PAGE = 11; // 페이지당 표시할 항목 수를 11개로 변경
+  const ITEMS_PER_PAGE = 10;
 
-  // --- 데이터 로딩 시뮬레이션 ---
+  // --- 데이터 로딩 ---
   useEffect(() => {
-    // 예시: 전체 차트 데이터 (40개) - isFavorite 속성 제거
-    const fetchedChartData = [
-        { name: "HLB", price: "66,400원", change: -7.6 },
-        { name: "삼성전자", price: "60,200원", change: 2.9 },
-        { name: "SK하이닉스", price: "150,000원", change: 1.5 },
-        { name: "LG화학", price: "450,000원", change: -0.5 },
-        { name: "현대차", price: "200,000원", change: 0.8 },
-        { name: "기아", price: "85,000원", change: -1.1 },
-        { name: "POSCO홀딩스", price: "400,000원", change: 0.3 },
-        { name: "셀트리온", price: "180,000원", change: 2.1 },
-        { name: "KB금융", price: "60,000원", change: -0.2 },
-        { name: "신한지주", price: "40,000원", change: 0.1 },
-        { name: "카카오", price: "55,000원", change: -3.5 }, // 11번째 항목
-        // --- 페이지 2 데이터 ---
-        { name: "네이버", price: "210,000원", change: 4.2 },
-        { name: "LG에너지솔루션", price: "380,000원", change: -1.8 },
-        { name: "카카오페이", price: "48,000원", change: 5.5 },
-        { name: "두산에너빌리티", price: "17,000원", change: -2.0 },
-        { name: "하이브", price: "250,000원", change: 3.1 },
-        { name: "크래프톤", price: "230,000원", change: -1.5 },
-        { name: "SK이노베이션", price: "120,000원", change: 1.0 },
-        { name: "삼성SDI", price: "420,000원", change: -0.8 },
-        { name: "고려아연", price: "500,000원", change: 2.5 },
-        { name: "삼성물산", price: "140,000원", change: 0.7 },
-        { name: "LG전자", price: "100,000원", change: -0.4 }, // 22번째 항목
-        // --- 페이지 3 데이터 ---
-        { name: "KT&G", price: "90,000원", change: 1.2 },
-        { name: "SK텔레콤", price: "50,000원", change: -0.1 },
-        { name: "한국전력", price: "25,000원", change: 0.9 },
-        { name: "포스코퓨처엠", price: "300,000원", change: -2.2 },
-        { name: "HMM", price: "18,000원", change: 3.3 },
-        { name: "에코프로비엠", price: "260,000원", change: -1.3 },
-        { name: "엔씨소프트", price: "220,000원", change: 0.5 },
-        { name: "삼성생명", price: "75,000원", change: -0.7 },
-        { name: "아모레퍼시픽", price: "150,000원", change: 1.8 },
-        { name: "넷마블", price: "60,000원", change: -1.0 },
-        { name: "LG디스플레이", price: "15,000원", change: 2.0 }, // 33번째 항목
-        // --- 페이지 4 데이터 ---
-        { name: "SK바이오사이언스", price: "70,000원", change: -0.9 },
-        { name: "대한항공", price: "28,000원", change: 1.1 },
-        { name: "현대모비스", price: "230,000원", change: -0.3 },
-        { name: "삼성화재", price: "280,000원", change: 0.6 },
-        { name: "LG생활건강", price: "400,000원", change: -1.2 },
-        { name: "두산밥캣", price: "55,000원", change: 2.8 },
-        { name: "SK스퀘어", price: "45,000원", change: -0.6 }, // 40번째 항목
-    ];
-    setAllChartData(fetchedChartData);
+    // 1. 차트 데이터 로딩 (서버에서 가져오기)
+    const fetchChartData = async () => {
+      setLoading(true); // 로딩 시작
+      setError(null); // 이전 에러 초기화
+      try {
+        const response = await fetch("http://172.17.153.114:5000/recommend/kr"); // 서버 주소
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`); // 에러 처리
+        }
+        const data = await response.json(); // JSON 파싱
 
-    // 예시: 변동순 데이터 (isFavorite 속성 제거)
-    const fetchedChangeRankData = [
-       { name: "카카오페이", change: 5.5 },
-       { name: "네이버", change: 4.2 },
-       { name: "HMM", change: 3.3 },
-       { name: "하이브", change: 3.1 },
-       { name: "두산밥캣", change: 2.8 },
-       { name: "고려아연", change: 2.5 },
-       { name: "셀트리온", change: 2.1 },
-       { name: "LG디스플레이", change: 2.0 },
-       { name: "아모레퍼시픽", change: 1.8 },
-       { name: "KT&G", change: 1.2 },
-       { name: "대한항공", change: 1.1 },
-       { name: "SK이노베이션", change: 1.0 },
-       // ... (더 많은 변동순 데이터)
-     ].sort((a, b) => b.change - a.change);
-     setAllChangeRankData(fetchedChangeRankData);
+        // 서버 데이터를 컴포넌트가 사용하는 형식으로 변환
+        // 서버 데이터에 price와 change가 없으므로 임시값을 사용합니다.
+        const transformedData = data.map(item => ({
+          name: item["stock_name"],       // key "1"이 종목명으로 가정
+          price: "N/A",        // 임시 가격 데이터
+          change: 0.0          // 임시 등락률 데이터
+        }));
 
-  }, []);
+        // 서버 데이터가 정확히 100개라고 가정합니다.
+        // 만약 100개 이상일 경우 아래 slice를 사용하세요.
+        // setAllChartData(transformedData.slice(0, 100));
+        setAllChartData(transformedData); // 상태 업데이트
+
+      } catch (e) {
+        console.error("차트 데이터를 불러오는 중 오류 발생:", e);
+        setError("데이터를 불러오는 데 실패했습니다."); // 에러 상태 설정
+        setAllChartData([]); // 에러 시 빈 배열로 설정
+      } finally {
+        // 로딩 완료 (데이터 로딩과 별개로 변동순 데이터 로딩 전에 완료될 수 있음)
+        // setLoading(false); // 변동순 데이터 로딩 후로 이동
+      }
+    };
+
+    // 2. 변동순 데이터 로딩 (기존 예시 데이터 사용)
+    const setupChangeRankData = () => {
+        // 예시: 변동순 데이터 (isFavorite 속성 제거)
+        // 실제로는 이 데이터도 서버에서 가져와야 할 수 있습니다.
+        const fetchedChangeRankData = [
+           { name: "카카오페이", change: 5.5 },
+           { name: "네이버", change: 4.2 },
+           { name: "HMM", change: 3.3 },
+           { name: "하이브", change: 3.1 },
+           { name: "두산밥캣", change: 2.8 },
+           { name: "고려아연", change: 2.5 },
+           { name: "셀트리온", change: 2.1 },
+           { name: "LG디스플레이", change: 2.0 },
+           { name: "아모레퍼시픽", change: 1.8 },
+           { name: "KT&G", change: 1.2 },
+           { name: "대한항공", change: 1.1 },
+           { name: "SK이노베이션", change: 1.0 },
+           // ... (더 많은 변동순 데이터)
+         ].sort((a, b) => b.change - a.change);
+         setAllChangeRankData(fetchedChangeRankData);
+    };
+
+    // 데이터 로딩 실행
+    fetchChartData().then(() => {
+        // 차트 데이터 로딩이 완료된 후 변동순 데이터 설정 및 로딩 상태 종료
+        setupChangeRankData();
+        setLoading(false); // 모든 데이터 로딩 완료
+    });
+
+  }, []); // 컴포넌트 마운트 시 1회 실행
 
   // --- 계산된 값 ---
+  // (이하 코드는 변경 없음)
   const totalPages = Math.ceil(allChartData.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const endIndex = startIndex + ITEMS_PER_PAGE;
   const currentChartData = allChartData.slice(startIndex, endIndex);
 
   // --- 이벤트 핸들러 ---
-  // 찜 클릭 핸들러 (콘솔 로그만 출력)
+  // (이하 코드는 변경 없음)
   const handleFavoriteClick = (stockName) => {
     console.log(`${stockName} 찜 상태 변경됨`);
-    // 실제 찜 상태 관리 로직은 여기에 추가하지 않음
   };
 
-  // 페이지 변경 핸들러
   const handlePageChange = (page) => {
     if (page === 'prev') {
       setCurrentPage((prev) => Math.max(prev - 1, 1));
@@ -106,7 +104,7 @@ export default function StockTable() {
     console.log(`페이지 ${page === 'prev' ? currentPage - 1 : page === 'next' ? currentPage + 1 : page}로 이동 요청됨`);
   };
 
-  // 페이지네이션 버튼 렌더링 로직 (변경 없음)
+  // (renderPageNumbers 함수는 변경 없음)
   const renderPageNumbers = () => {
     const pageNumbers = [];
     const maxPagesToShow = 5;
@@ -164,11 +162,21 @@ export default function StockTable() {
     return pageNumbers;
   };
 
+
   // --- 렌더링 ---
+  // 로딩 및 에러 상태 표시 추가
+  if (loading) {
+    return <div className="stock-table loading">데이터를 불러오는 중입니다...</div>;
+  }
+
+  if (error) {
+    return <div className="stock-table error">오류: {error}</div>;
+  }
+
   return (
     <div className="stock-table">
+      {/* (이하 JSX 구조는 변경 없음) */}
       <div className="title">
-        {/* 페이지 정보 텍스트 제거 */}
         <h2 className="title-1">차트</h2>
         <h2 className="title-2">변동 순</h2>
       </div>
@@ -177,39 +185,38 @@ export default function StockTable() {
         {/* 차트 테이블 */}
         <div className="chart-table">
           <div style={{ flexGrow: 1, overflowY: 'auto', position: 'relative' }}>
-             <table>
-               <thead>
-                 <tr>
-                   <th className="rank-header"></th>
-                   <th>종목</th>
-                   <th>현재가</th>
-                   <th>등락률</th>
-                   <th className="favorite-header"></th>
-                 </tr>
-               </thead>
-               <tbody>
-                 {currentChartData.map((stock, index) => (
-                   <tr key={stock.name} className="stock-row">
-                     <td className="rank-cell">{(currentPage - 1) * ITEMS_PER_PAGE + index + 1}</td>
-                     <td>{stock.name}</td>
-                     <td>{stock.price}</td>
-                     <td className={stock.change >= 0 ? "positive" : "negative"}>
-                       {stock.change >= 0 ? '+' : ''}{stock.change.toFixed(1)}%
-                     </td>
-                     <td className="favorite-cell">
-                       <span
-                         // active 클래스 로직 제거
-                         className="favorite-icon"
-                         onClick={() => handleFavoriteClick(stock.name)}
-                         title={`${stock.name} 찜하기`}
-                       >
-                         ♥
-                       </span>
-                     </td>
-                   </tr>
-                 ))}
-               </tbody>
-             </table>
+              <table>
+                <thead>
+                  <tr>
+                    <th className="rank-header"></th>
+                    <th>종목</th>
+                    <th>현재가</th>
+                    <th>등락률</th>
+                    <th className="favorite-header"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {currentChartData.map((stock, index) => (
+                    <tr key={stock.name} className="stock-row">
+                      <td className="rank-cell">{(currentPage - 1) * ITEMS_PER_PAGE + index + 1}</td>
+                      <td>{stock.name}</td>
+                      <td>{stock.price}</td> {/* 임시 데이터 "N/A" 표시됨 */}
+                      <td className={stock.change >= 0 ? "positive" : "negative"}>
+                        {stock.change >= 0 ? '+' : ''}{stock.change.toFixed(1)}% {/* 임시 데이터 0.0% 표시됨 */}
+                      </td>
+                      <td className="favorite-cell">
+                        <span
+                          className="favorite-icon"
+                          onClick={() => handleFavoriteClick(stock.name)}
+                          title={`${stock.name} 찜하기`}
+                        >
+                          ♥
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
           </div>
           {/* 페이지네이션 컨트롤 */}
           {totalPages > 1 && (
@@ -235,8 +242,8 @@ export default function StockTable() {
               </tr>
             </thead>
             <tbody>
-              {/* 변동순 데이터는 상위 N개만 표시 (11개) */}
-              {allChangeRankData.slice(0, 11).map((stock) => (
+              {/* 변동순 데이터는 상위 N개만 표시 (10개) */}
+              {allChangeRankData.slice(0, 10).map((stock) => (
                 <tr key={stock.name} className="stock-row">
                   <td>{stock.name}</td>
                   <td className={stock.change >= 0 ? "positive" : "negative"}>
@@ -244,7 +251,6 @@ export default function StockTable() {
                   </td>
                   <td className="favorite-cell">
                     <span
-                      // active 클래스 로직 제거
                       className="favorite-icon"
                       onClick={() => handleFavoriteClick(stock.name)}
                       title={`${stock.name} 찜하기`}
