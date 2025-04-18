@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>주식 뉴스 분석기</title>
+    <meta charset="UTF-8">
+</head>
+<body>
+    <h1>주식 뉴스 분석기</h1>
+    <form id="searchForm">
+        <input type="text" id="ticker" name="ticker" placeholder="예: 삼성전자, 005930" required>
+        <button type="submit">검색</button>
+    </form>
+    
+    <div id="loading" style="display:none;">로딩 중...</div>
+    <div id="result"></div>
+    
+    <script>
+        document.getElementById('searchForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const ticker = document.getElementById('ticker').value.trim();
+            if (!ticker) return;
+            
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('result').innerHTML = '';
+            
+            fetch('/api/news?ticker=' + encodeURIComponent(ticker))
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('loading').style.display = 'none';
+                    
+                    let html = '';
+                    
+                    if (data.error) {
+                        html = `<div>${data.error}</div>`;
+                    } else {
+                        html += `<h2>${data.title || '제목 없음'}</h2>`;
+                        
+                        if (data.link) {
+                            html += `<a href="${data.link}">원문</a>`;
+                        }
+                        
+                        if (data.image_url) {
+                            html += `<img src="${data.image_url}">`;
+                        }
+                        
+                        if (data.content) {
+                            html += `<div>${data.content.replace(/\\n/g, '<br>')}</div>`;
+                        }
+                        
+                        if (data.analysis) {
+                            const analysis = data.analysis;
+                            
+                            html += '<h3>분석 결과</h3>';
+                            
+                            if (analysis.summary) {
+                                html += `<h4>요약</h4><p>${analysis.summary}</p>`;
+                            }
+                            
+                            html += `<h4>주가 영향</h4><p>${analysis.impact}</p>`;
+                            
+                            if (analysis.impact_reason) {
+                                html += `<p>${analysis.impact_reason}</p>`;
+                            }
+                            
+                            if (analysis.key_points && analysis.key_points.length > 0) {
+                                html += '<h4>핵심 포인트</h4><ul>';
+                                analysis.key_points.forEach(point => {
+                                    html += `<li>${point}</li>`;
+                                });
+                                html += '</ul>';
+                            }
+                            
+                            if (analysis.related_sectors && analysis.related_sectors.length > 0) {
+                                html += '<h4>관련 산업</h4><ul>';
+                                analysis.related_sectors.forEach(sector => {
+                                    html += `<li>${sector}</li>`;
+                                });
+                                html += '</ul>';
+                            }
+                            
+                            if (analysis.investment_opinion) {
+                                html += `<h4>투자 의견</h4><p>${analysis.investment_opinion}</p>`;
+                            }
+                        }
+                        
+                        html += `<button onclick="toggleRaw()">원시 데이터</button>`;
+                        html += `<pre id="rawData" style="display:none;">${JSON.stringify(data, null, 2)}</pre>`;
+                    }
+                    
+                    document.getElementById('result').innerHTML = html;
+                })
+                .catch(error => {
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('result').innerHTML = `<div>오류 발생</div>`;
+                });
+        });
+        
+        function toggleRaw() {
+            const rawData = document.getElementById('rawData');
+            rawData.style.display = rawData.style.display === 'none' ? 'block' : 'none';
+        }
+    </script>
+</body>
+</html>

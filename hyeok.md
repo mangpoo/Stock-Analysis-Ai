@@ -1,6 +1,6 @@
 # crawler.py
 ## 설명:
-ticker 값을 입력하면 json 형태로 뉴스의 제목, 링크, 콘텐츠, 이미지url 을 반환하는 api.
+ticker or stock_name 값을 입력하면 json 형태로 뉴스의 제목, 링크, 콘텐츠, 이미지url 을 반환하는 api.
 
 ## 사용방법:
 front나 server 에서 ticker 값을 파라미터로 함수를 호출.
@@ -13,6 +13,9 @@ crawler.py 만 연결되어있음, front 와 연동해야함.
 
 ## 사용방법:
 form 을 통해 유저로부터 input을 입력받고 clawer.py 를 호출하여 값을 json 형태로 출력.
+```sh
+python3 app.py
+```
 
 ---
 # requirements.txt
