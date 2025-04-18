@@ -5,6 +5,7 @@ import json
 from pykrx import stock
 import yfinance as yf
 import os
+import datetime as dt
 
 import searcher
 
@@ -76,6 +77,68 @@ def find(name):
     except Exception as e:
         return jsonify({"error": "empty"})
 
+@app.route('/changerate/<string:country>/<string:ticker>')
+def get_change_rate(country, ticker):
+
+    if(country == 'kr'):
+        yesterday_date = dt.datetime.now() - dt.timedelta(days = 1)
+        yesterday_date = f"{yesterday_date.year}{yesterday_date.month if(yesterday_date.month >= 10) else '0' + str(yesterday_date.month)}{yesterday_date.day}"
+        try:
+            df = stock.get_market_ohlcv_by_date(fromdate=yesterday_date, todate=yesterday_date, ticker = ticker)
+            change_rate = df['등락률'][0]
+            yesterday_close = df['종가'][0]
+        except Exception as e:
+            return jsonify({"error" : "empty"})
+        return jsonify({"change_rate":float(change_rate),"yesterday_close" : int(yesterday_close)})
+    else: # US
+        fromdate = dt.datetime.now() - dt.timedelta(days = 5)
+        enddate = dt.datetime.now()
+        
+        fromdate = f"{fromdate.year}-{fromdate.month}-{fromdate.day}"
+        enddate = f"{enddate.year}-{enddate.month}-{enddate.day}"
+
+        try:
+            df = yf.download(ticker, start=fromdate, end=enddate)
+            print(df)
+            # 필요한 데이터 선택 및 포맷 변경
+            df = df[['Open', 'High', 'Low', 'Close', 'Volume']]
+            df.reset_index(inplace=True)
+            df["Date"] = pd.to_datetime(df["Date"]).dt.strftime('%Y-%m-%d')  # 날짜 포맷
+            df["Change Rate"] = (df["Close"].pct_change() * 100).fillna("")  # 등락률 계산
+            df.columns = ['date', 'open', 'high', 'low', 'close', 'volume', 'change_rate']
+
+            change_rate = df['change_rate'].tolist()[-1]
+            yesterday_close = df['close'].tolist()[-1]
+
+            return jsonify({"change_rate":float(change_rate),"yesterday_close" : float(yesterday_close)})
+        
+
+        except Exception as e:
+            return jsonify({"error" : "empty"})
+
+
+@app.route('/recommend/<string:country>')
+def get_recommend(country):
+    if(country == "kr"): # KR
+        try:
+            df = search_obj.kr_get_recommend_stocks()
+            if(type(df) != pd.DataFrame):
+                return jsonify({"error": "empty"})
+            json_result = df.to_dict(orient = 'records')
+            return jsonify(json_result)
+        except Exception as e:
+            return jsonify({"error" : "empty"})
+        
+    else: # US
+        try:
+            df = search_obj.us_get_recommend_stocks()
+            if(type(df) != pd.DataFrame):
+                return jsonify({"error": "empty"})
+            json_result = df.to_dict(orient = 'records')
+            return jsonify(json_result)
+        except Exception as e:
+            return jsonify({"error" : "empty"})
+
 
 @app.route('/chart/<string:country>/<string:ticker>/<string:start_date>/<string:end_date>')
 def serve_chart(country, ticker, start_date, end_date):
@@ -106,6 +169,7 @@ def logo(country, ticker):
             img = path + ticker + ".png"
     
     return send_file(img, mimetype="image/png")
+
 
 
 if __name__ == '__main__':

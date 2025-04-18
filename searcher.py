@@ -2,6 +2,7 @@ import sqlite3
 import re
 import pandas as pd
 from flask import jsonify
+import datetime as dt
 
 class Searcher:
     def __init__(self):
@@ -35,7 +36,6 @@ class Searcher:
         df = pd.DataFrame(data)
         df.columns = ['ticker', 'stock_name', 'market_type']
         return df
-
 
 
     def __en_search(self, input_string : str):
@@ -79,11 +79,50 @@ class Searcher:
                 stock_name = temp[0][0]
         
         return stock_name
+    
+    
+    def kr_get_recommend_stocks(self) -> pd.DataFrame:
+        cur = self.conn.cursor()
+        
+        cur.execute("""select ticker, stock_name, market_capitalization from kr_stock order by market_capitalization desc limit 110;""")
+        df = pd.DataFrame(cur.fetchall())
+        df.reset_index(inplace=True)
+        df.drop("index", axis = 1, inplace=True)
+        df.columns = ['ticker', 'stock_name','market_capitalization']
+
+        return df
+
+    def us_get_recommend_stocks(self) -> pd.DataFrame:
+        cur = self.conn.cursor()
+
+        table_results = list()
+
+        for market_type in ["amex", "nsdq", "nyse"]:
+            cur.execute(f"""select ticker, stock_name, market_capitalization from {market_type}_stock order by market_capitalization desc limit 50;""")
+            table_results += cur.fetchall()
+        
+        df = pd.DataFrame(table_results)
+        df.columns = ['ticker', 'stock_name', 'market_capitalization']
+        
+        df.sort_values(by = ["market_capitalization"], axis = 0, ascending=False, inplace=True)
+        df.reset_index(inplace=True)
+        df.drop("index", axis = 1, inplace=True)
+        return df.head(110)
+
+
+
+
+
+    ##############################
+    def tester(self, cmd):
+        cur = self.conn.cursor()
+        cur.execute(cmd)
+        print(cur.fetchall())
+    ##############################
 
 
         
         
 # s = Searcher()
-# print(s.searcher(input()))
-# print(s.get_name_by_ticker("us", "intc"))
-# print(s.get_name_by_ticker("kr", "005930"))
+# print(s.kr_get_recommend_stocks())
+# print(s.us_get_recommend_stocks())

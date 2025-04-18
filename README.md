@@ -86,6 +86,40 @@ http://localhost:5000/chart/us/GOOGL/20220101/20240101
 
 ---
 
+### 5. 전날 등락률, 종가
+
+```
+GET /changerate/<country>/<ticker>
+```
+
+예시  
+```
+http://localhost:5000/changerate/us/AAPL  
+http://localhost:5000/changerate/kr/005930
+```
+{
+    change_rate	1.3949613401343264
+    yesterday_close	196.97999572753906
+}
+반환
+
+---
+
+### 6. 시가총액 기준 상위 120개 종목 정보
+
+```
+GET /recommend/<string:country>
+```
+
+예시  
+```
+http://localhost:5000/recommend/us
+http://localhost:5000/recommend/kr
+```
+
+해당 국가의 시가총액 기준 상위 120개 종목 정보 반환
+---
+
 ## 주요 파일 구조
 
 - `server.py`: 서버 실행 파일
