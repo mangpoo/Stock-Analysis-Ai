@@ -1,6 +1,6 @@
 # stock_json_server
 
-주식 종목 검색 및 가격 데이터를 JSON 또는 차트 형식으로 제공하는 간단한 Flask 기반 API 서버입니다.
+주식 종목 검색 및 가격,거래량 등의 데이터를 JSON 또는 차트 형식의 html로 제공하는 Flask 기반 API 서버입니다.
 
 ## 실행 방법
 
