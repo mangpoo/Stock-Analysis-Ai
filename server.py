@@ -145,6 +145,9 @@ def get_recommend(country):
 
 @app.route('/chart/<string:country>/<string:ticker>/<string:start_date>/<string:end_date>', methods=['GET'])
 def serve_chart(country, ticker, start_date, end_date):
+    if(len(start_date) != 8 or len(end_date) != 8):
+        return "date error"
+
     stock_name = search_obj.get_name_by_ticker(country=country, ticker=ticker)
     currency = 'KRW' if country == 'kr' else 'USD'
     return render_template("chart.html", stock_name = stock_name, currency =currency)
