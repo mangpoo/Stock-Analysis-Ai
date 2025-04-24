@@ -39,7 +39,7 @@ export default function ChartSection() {
         <div className="chart-iframe-container">
           <iframe
             className="chart-iframe"
-            src="http://172.17.153.114:5000/chart/kr/005930/20000101/20250417"
+            src="http://192.168.0.18:5000/chart/kr/000660/20000101/20250423"
             title="Stock Chart" // 접근성을 위한 title 속성
           ></iframe>
         </div>
