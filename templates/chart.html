@@ -9,18 +9,26 @@
       margin: 0;
       font-family: Arial, sans-serif;
     }
-    #chart {
-      width: 100%;
+    #chart-container {
+      display: flex;
+      flex-direction: column;
       height: 500px;
-      margin: 0 auto;
+    }
+    #chart {
+      flex: 1;  /* 캔들 차트가 화면을 다 차지하도록 */
+    }
+    #volume-chart {
+      height: 100px;  /* 거래량 차트 높이 */
     }
   </style>
 </head>
 <body>
-  <div id="chart"></div>
+  <div id="chart-container">
+    <div id="chart"></div>
+    <div id="volume-chart"></div>
+  </div>
 
   <script>
-
     function postHeightToParent() {
       const height = document.documentElement.scrollHeight;
       window.parent.postMessage({ iframeHeight: height }, '*');
@@ -29,7 +37,7 @@
     window.addEventListener('load', postHeightToParent);
     window.addEventListener('resize', postHeightToParent);
 
-    //  URL 파라미터 추출
+    // URL 파라미터 추출
     const pathParts = window.location.pathname.split('/');
     const country = pathParts[2];
     const ticker = pathParts[3];
@@ -38,8 +46,7 @@
 
     // 통화 단위 설정
     const currency = "{{ currency }}";  // 서버에서 전달된 currency 값을 JavaScript에서 사용
-    
-
+    const ip = "{{ ip }}";
     // 차트 만들기
     const chart = LightweightCharts.createChart(document.getElementById('chart'), {
       width: document.getElementById('chart').clientWidth,
@@ -57,24 +64,29 @@
       },
     });
 
-
-    // Get the current users primary locale
-    const currentLocale = window.navigator.languages[0];
-    // Create a number format using Intl.NumberFormat
-    const myPriceFormatter = Intl.NumberFormat(currentLocale, {
-        style: 'currency',
-        currency: currency, // Currency for data points
-    }).format;
-    //
-    
-    // Apply the custom priceFormatter to the chart
-    chart.applyOptions({
-        localization: {
-            priceFormatter: myPriceFormatter,
-        },
+    const volumeChart = LightweightCharts.createChart(document.getElementById('volume-chart'), {
+      width: document.getElementById('volume-chart').clientWidth,
+      height: document.getElementById('volume-chart').clientHeight,
+      timeScale: {
+        visible: true,
+        timeVisible: true,
+        secondsVisible: false,
+      },
+      rightPriceScale: {
+        visible: false, // 거래량 차트의 오른쪽 가격 축 숨기기
+      },
+      layout: {
+        backgroundColor: '#ffffff',
+        textColor: '#555',
+      },
     });
 
     const candleSeries = chart.addCandlestickSeries();
+    const volumeSeries = volumeChart.addHistogramSeries({
+      priceScaleId: 'left',
+      priceFormat: { type: 'volume' },
+      scaleMargins: { top: 0.8, bottom: 0 },
+    });
 
     // 이동평균선 (MA) 시리즈 추가
     const movingAvgSeries50 = chart.addLineSeries({
@@ -90,8 +102,7 @@
     });
 
     // API 요청
-    // const apiUrl = `http://minjun0410.iptime.org:5000/${country}/${ticker}/${startDate}/${endDate}`; // not local
-    const apiUrl = `http://localhost:5000/${country}/${ticker}/${startDate}/${endDate}`; // local
+    const apiUrl = `http://${ip}:5000/${country}/${ticker}/${startDate}/${endDate}`; // local
 
     fetch(apiUrl)
       .then(res => res.json())
@@ -104,8 +115,17 @@
           close: item.close,
         }));
 
+        const volumeData = data.map(item => ({
+          time: item.date,
+          value: item.volume,
+          color: item.close > item.open ? 'rgba(0, 150, 136, 0.8)' : 'rgba(255, 82, 82, 0.8)',
+        }));
+
         // 차트에 캔들 데이터 추가
         candleSeries.setData(formatted);
+
+        // 차트에 histogram == 거래량 차트 추가
+        volumeSeries.setData(volumeData);
 
         // 50일, 200일 이동평균선 계산
         const movingAvg50 = calculateMovingAverage(formatted, 50);
@@ -121,7 +141,8 @@
 
     // 반응형 처리
     window.addEventListener('resize', () => {
-      chart.applyOptions({ width: document.getElementById('chart').clientWidth });
+      chart.resize(document.getElementById('chart').clientWidth, document.getElementById('chart').clientHeight);
+      volumeChart.resize(document.getElementById('volume-chart').clientWidth, document.getElementById('volume-chart').clientHeight);
     });
 
     // 이동평균선 계산 함수 (단기, 장기)

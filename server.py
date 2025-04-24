@@ -9,6 +9,8 @@ import datetime as dt
 
 import searcher
 
+HOST = "192.168.0.18"
+
 search_obj = None
 app = Flask(__name__)
 CORS(app)
@@ -150,7 +152,7 @@ def serve_chart(country, ticker, start_date, end_date):
 
     stock_name = search_obj.get_name_by_ticker(country=country, ticker=ticker)
     currency = 'KRW' if country == 'kr' else 'USD'
-    return render_template("chart.html", stock_name = stock_name, currency =currency)
+    return render_template("chart.html", stock_name = stock_name, currency =currency, ip=HOST)
 
 
 
