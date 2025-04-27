@@ -78,9 +78,9 @@ class Worker:
         return model_response
         
 
-worker = Worker(0)
-f = open("1.txt", 'r')
-result = worker.summarize(f.read())
+# worker = Worker(0)
+# f = open("1.txt", 'r')
+# result = worker.summarize(f.read())
 
-print(result, type(result))
-f.close()
+# print(result, type(result))
+# f.close()
