@@ -4,20 +4,24 @@ import time
 
 MODEL_NAME = "google/gemma-3-1b-it"
 
-torch.backends.cuda.enable_mem_efficient_sdp(False)
-torch.backends.cuda.enable_flash_sdp(False)
-torch.backends.cuda.enable_math_sdp(True)
-
 class Worker:
-    def __init__(self, idx:int):
-        self.idx = idx
+    def __init__(self):
+        self.idx = 0
+        self.isBusy = 0
+        self.model = None
+        self.tokenizer = None 
+        self.streamer = None
+
         self.load_model()
-        self.isBusy = False
         f = open("prompt.txt", 'r')
         self.prompt_content = f.read()
         f.close()
 
     def load_model(self):
+        torch.backends.cuda.enable_mem_efficient_sdp(False)
+        torch.backends.cuda.enable_flash_sdp(False)
+        torch.backends.cuda.enable_math_sdp(True)
+        
         print(self.idx, "model loading...")
 
         # CUDA 설정
@@ -51,12 +55,13 @@ class Worker:
         return prompt
 
     def summarize(self, text):
-        self.isBusy = True
-
+        print("in worker")
         start = time.time()
 
         inputs = self.tokenizer(self.get_prompt(text), return_tensors="pt").to(self.device)
         prompt_length = len(inputs.input_ids[0])
+
+        print("in worker2")
 
         output = self.model.generate(
             **inputs,
@@ -67,18 +72,19 @@ class Worker:
             max_new_tokens=512,
             streamer=self.streamer,
         )
+
+        print("in worker3")
+
         model_response = self.tokenizer.decode(
             output[0][prompt_length:], 
             skip_special_tokens=True
         )
 
         print(time.time() - start, "SEC")
-        self.isBusy = False
-
         return model_response
         
 
-# worker = Worker(0)
+# worker = Worker()
 # f = open("1.txt", 'r')
 # result = worker.summarize(f.read())
 
