@@ -29,11 +29,11 @@ class WorkerClient:
             buffer += chunk
             try:
                 decoded_data = buffer.decode("utf-8")
-                if '#?#?' in decoded_data:
+                if '#?#?' in decoded_data: # 작업 가능 여부 확인
                     buffer = b""
                     self.client_socket.send(f"{self.isBusy}".encode())
 
-                elif "#####" in decoded_data:
+                elif "#####" in decoded_data: # 뉴스 입력 완료 확인 및 task 시작
                     message = decoded_data.split("#####")[0]
                     print("received news:", message[:30], "...")
                     buffer = b""
@@ -58,6 +58,8 @@ if __name__ == "__main__":
 
     time.sleep(1)
     wClient = WorkerClient(task_q)
-    wClient.run()
+    
+    wClient.run() # client 시작
+
     task_q.put("__EXIT__")
     p.join()

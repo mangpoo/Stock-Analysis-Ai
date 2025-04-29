@@ -13,3 +13,4 @@ def worker_loop(task_q: Queue):
         print("[Worker] Summarizing...")
         result = worker.summarize(text)
         # print("[Worker] Done:", result[:100], "...")
+        """ Cache 관련 구현 """
