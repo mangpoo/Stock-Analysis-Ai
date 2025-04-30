@@ -3,12 +3,17 @@ import torch
 import time
 import json
 import re
+import io
+import sys
+from threading import Lock
 
 MODEL_NAME = "google/gemma-3-1b-it"
+# MODEL_NAME = "google/gemma-3-4b-it"
+STREAMER_ENABLE = True
 
 class Worker:
-    def __init__(self):
-        self.idx = 0
+    def __init__(self, worker_id=0):
+        self.idx = worker_id
         self.isBusy = 0
         self.model = None
         self.tokenizer = None 
@@ -17,17 +22,18 @@ class Worker:
         f = open("prompt.txt", 'r')
         self.prompt_content = f.read()
         f.close()
+        print(f"\033[{31 + self.idx % 6}m[Worker {self.idx}]\033[0m: 초기화 완료")
         
     def load_model(self):
         torch.backends.cuda.enable_mem_efficient_sdp(False)
         torch.backends.cuda.enable_flash_sdp(False)
         torch.backends.cuda.enable_math_sdp(True)
         
-        print(self.idx, "model loading...")
+        print(f"\033[{31 + self.idx % 6}m[Worker {self.idx}]\033[0m: 모델 로딩 중...")
         # CUDA 설정
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         
-        print(self.idx, "device", self.device)
+        print(f"\033[{31 + self.idx % 6}m[Worker {self.idx}]\033[0m: 장치 - {self.device}")
         # 모델과 토크나이저 로드
         tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)       
         model = AutoModelForCausalLM.from_pretrained(
@@ -37,9 +43,10 @@ class Worker:
             device_map="auto",
         ).to(self.device)
         model.eval()
-        # 스트리머 준비 (타자치듯 출력)
+        
         streamer = TextStreamer(tokenizer, skip_prompt=True, skip_special_tokens=True)
-        self.model, self.tokenizer, self.streamer =  model, tokenizer, streamer
+        self.model, self.tokenizer, self.streamer = model, tokenizer, streamer
+        print(f"\033[{31 + self.idx % 6}m[Worker {self.idx}]\033[0m: 모델 로딩 완료")
     
     def get_prompt(self, text:str):
         messages = [
@@ -99,7 +106,7 @@ class Worker:
             return parsed
             
         except Exception as e:
-            print(f"JSON 파싱 오류: {e}")
+            print(f"\033[{31 + self.idx % 6}m[Worker {self.idx}]\033[0m: JSON 파싱 오류: {e}")
             # 파싱 실패 시 기본 형식 반환
             return {
                 "issue": "뉴스 요약 실패",
@@ -109,27 +116,51 @@ class Worker:
     
     def summarize(self, text):
         start = time.time()
+        
+        print(f"\033[{31 + self.idx % 6}m[Worker {self.idx}]\033[0m: 요약 작업 시작...")
+        print(f"\033[{31 + self.idx % 6}m[Worker {self.idx}]\033[0m: 프롬프트 토큰화 중...")
+        
         inputs = self.tokenizer(self.get_prompt(text), return_tensors="pt").to(self.device)
         prompt_length = len(inputs.input_ids[0])
-        output = self.model.generate(
-            **inputs,
-            do_sample=True,
-            temperature=0.2,
-            top_k=50,
-            top_p=0.95,
-            max_new_tokens=512,
-            streamer=self.streamer,
-        )
+        
+        # TextStreamer를 사용한 실시간 출력
+        if(STREAMER_ENABLE):
+            print(f"\033[{31 + self.idx % 6}m[Worker {self.idx}]\033[0m: 생성 시작 (실시간 출력)...")
+            output = self.model.generate(
+                **inputs,
+                do_sample=True,
+                temperature=0.2,
+                top_k=50,
+                top_p=0.95,
+                max_new_tokens=512,
+                streamer=self.streamer,  # 스트리머 활성화
+            )
+        else:
+            print(f"\033[{31 + self.idx % 6}m[Worker {self.idx}]\033[0m: 생성 시작 ...")
+            output = self.model.generate( # 스트리머 없이
+                **inputs,
+                do_sample=True,
+                temperature=0.2,
+                top_k=50,
+                top_p=0.95,
+                max_new_tokens=512,
+            )
+        
+        # 최종 응답 생성
         model_response = self.tokenizer.decode(
             output[0][prompt_length:], 
             skip_special_tokens=True
         )
-        # print("원본 모델 응답:", model_response)
+        
+        print(f"\033[{31 + self.idx % 6}m[Worker {self.idx}]\033[0m: 응답 생성 완료, JSON 형식 처리 중...")
         
         # JSON 형식 처리
         formatted_response = self.format_json_output(model_response)
         final_json = json.dumps(formatted_response, ensure_ascii=False, indent=2)
         
-        print("처리된 JSON 응답:", final_json)
-        print(time.time() - start, "SEC")
+        elapsed = time.time() - start
+        print(f"\033[{31 + self.idx % 6}m[Worker {self.idx}]\033[0m: 처리 완료 ({elapsed:.2f}초)")
+        print(f"\033[{31 + self.idx % 6}m[Worker {self.idx}]\033[0m: 최종 JSON:\n{final_json}")
+        
         return final_json
+    

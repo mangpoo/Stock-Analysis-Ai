@@ -1,19 +1,28 @@
 import time
 import os
 import signal
-from _thread import *
 from multiprocessing import Queue, Process
-from worker_process import worker_loop
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request, Response
 from flask_cors import CORS
 import random
 import atexit
+import json
+from worker_process import worker_loop
 
 app = Flask("__name__")
 CORS(app)
+
+# 작업 큐
 task_q = Queue()
+# 워커 프로세스 목록
 worker_processes = []
-WORKER_COUNT = 2  # 원하는 워커 프로세스 수를 여기에 설정
+
+already_summarized_id_list = list() # 이미 요약된 id 저장
+if("summarized_articles" not in os.listdir()):
+    os.mkdir("summarized_articles")
+
+# 워커 수
+WORKER_COUNT = 3  # 원하는 워커 프로세스 수를 여기에 설정
 
 # 모든 워커 프로세스를 종료하는 함수
 def terminate_workers():
@@ -37,7 +46,7 @@ def start_worker_pool():
     # 지정된 수의 워커 프로세스 시작
     for i in range(WORKER_COUNT):
         print(f"워커 프로세스 #{i+1} 시작 중...")
-        p = Process(target=worker_loop, args=(task_q,))
+        p = Process(target=worker_loop, args=(task_q, i))  # 워커 ID 전달
         p.daemon = True  # 메인 프로세스 종료 시 함께 종료되도록 설정
         p.start()
         worker_processes.append(p)
@@ -53,13 +62,16 @@ def check_workers_health():
     for i, p in enumerate(worker_processes):
         if not p.is_alive():
             print(f"워커 프로세스 #{i+1} (PID: {p.pid})가 죽었습니다. 재시작합니다.")
-            new_p = Process(target=worker_loop, args=(task_q,))
+            new_p = Process(target=worker_loop, args=(task_q, i))  # 워커 ID 전달
             new_p.daemon = True
             new_p.start()
             worker_processes[i] = new_p
             print(f"워커 프로세스 #{i+1} 재시작됨 (새 PID: {new_p.pid})")
     
     return len([p for p in worker_processes if p.is_alive()])
+
+
+### FLASK
 
 @app.route("/crawler", methods=['GET'])
 def test():
@@ -68,12 +80,21 @@ def test():
     if active_workers < WORKER_COUNT:
         print(f"경고: {WORKER_COUNT}개 중 {active_workers}개의 워커만 활성화되어 있습니다.")
     
-    idx = random.randint(1, 5)
-    print("===== start =====", idx)
-    f = open(f"temp/{idx}.txt", 'r')
-    txt = f.read()
-    task_q.put(txt)
-    return jsonify({"status": "started"})
+    id = random.randint(1, 5)
+    if(f"{id}.txt" in os.listdir("summarized_articles")): # 디렉터리에 저장된 요약이 있는 경우
+        return jsonify({"status" : "already_exist"})
+    
+    elif(id in already_summarized_id_list): # 이미 서버가 동작한 이후 요약한 id인 경우(아마 요약중일때)
+        return jsonify({"status" : "may be summarizing..."})
+        
+    else: # 디렉터리에 저장된 요약이 없다면 크롤링 및 요약을 시도한다.
+        try:
+            print("===== start =====", id) 
+            already_summarized_id_list.append(id) # id 추가
+            task_q.put(id)
+            return jsonify({"status": "started", "active_workers": active_workers, "file": f"temp/{id}.txt"})
+        except Exception as e:
+            return jsonify({"status": "error", "message": str(e)})
 
 @app.route("/workers/status", methods=['GET'])
 def worker_status():
