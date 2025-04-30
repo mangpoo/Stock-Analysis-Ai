@@ -1,6 +1,8 @@
 from transformers import AutoTokenizer, AutoModelForCausalLM, TextStreamer
 import torch
 import time
+import json
+import re
 
 MODEL_NAME = "google/gemma-3-1b-it"
 
@@ -11,24 +13,21 @@ class Worker:
         self.model = None
         self.tokenizer = None 
         self.streamer = None
-
         self.load_model()
         f = open("prompt.txt", 'r')
         self.prompt_content = f.read()
         f.close()
-
+        
     def load_model(self):
         torch.backends.cuda.enable_mem_efficient_sdp(False)
         torch.backends.cuda.enable_flash_sdp(False)
         torch.backends.cuda.enable_math_sdp(True)
         
         print(self.idx, "model loading...")
-
         # CUDA 설정
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         
         print(self.idx, "device", self.device)
-
         # 모델과 토크나이저 로드
         tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)       
         model = AutoModelForCausalLM.from_pretrained(
@@ -38,31 +37,80 @@ class Worker:
             device_map="auto",
         ).to(self.device)
         model.eval()
-
         # 스트리머 준비 (타자치듯 출력)
         streamer = TextStreamer(tokenizer, skip_prompt=True, skip_special_tokens=True)
-
         self.model, self.tokenizer, self.streamer =  model, tokenizer, streamer
-
+    
     def get_prompt(self, text:str):
         messages = [
             {
                 "role" : "user",
-                "content": "{}{}".format(self.prompt_content,text)
+                "content": "{}{}".format(self.prompt_content, text)
             }
         ]
         prompt = self.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
         return prompt
-
+    
+    def format_json_output(self, raw_output):
+        """
+        모델 출력을 정리하여 단일 JSON 객체 형태로 반환합니다.
+        """
+        try:
+            # JSON 코드 블록 추출 시도
+            json_match = re.search(r'```json\s*([\s\S]*?)\s*```', raw_output)
+            if json_match:
+                json_str = json_match.group(1)
+            else:
+                # JSON 코드 블록이 없는 경우 전체 텍스트에서 JSON 형식 찾기
+                json_str = re.search(r'(\{[\s\S]*\}|\[[\s\S]*\])', raw_output).group(1)
+            
+            # 문자열을 JSON으로 파싱
+            parsed = json.loads(json_str)
+            
+            # 배열인 경우 첫 번째 항목만 사용하거나 항목들을 병합
+            if isinstance(parsed, list) and len(parsed) > 0:
+                # 모든 항목 병합
+                merged = {
+                    "issue": parsed[0].get("issue", ""),
+                    "impact": "",
+                    "related_tickers": []
+                }
+                
+                # impact 정보 병합
+                impact_parts = []
+                for item in parsed:
+                    if "impact" in item and item["impact"]:
+                        impact_parts.append(item["impact"])
+                    elif "description" in item and item["description"]:
+                        impact_parts.append(item["description"])
+                
+                merged["impact"] = " ".join(impact_parts)
+                
+                # related_tickers 병합 및 중복 제거
+                all_tickers = []
+                for item in parsed:
+                    if "related_tickers" in item and item["related_tickers"]:
+                        all_tickers.extend(item["related_tickers"])
+                
+                merged["related_tickers"] = list(set(all_tickers))
+                return merged
+            
+            # 이미 단일 객체인 경우 그대로 반환
+            return parsed
+            
+        except Exception as e:
+            print(f"JSON 파싱 오류: {e}")
+            # 파싱 실패 시 기본 형식 반환
+            return {
+                "issue": "뉴스 요약 실패",
+                "impact": "요약 과정에서 오류가 발생했습니다.",
+                "related_tickers": []
+            }
+    
     def summarize(self, text):
-        print("in worker")
         start = time.time()
-
         inputs = self.tokenizer(self.get_prompt(text), return_tensors="pt").to(self.device)
         prompt_length = len(inputs.input_ids[0])
-
-        print("in worker2")
-
         output = self.model.generate(
             **inputs,
             do_sample=True,
@@ -72,21 +120,16 @@ class Worker:
             max_new_tokens=512,
             streamer=self.streamer,
         )
-
-        print("in worker3")
-
         model_response = self.tokenizer.decode(
             output[0][prompt_length:], 
             skip_special_tokens=True
         )
-
-        print(time.time() - start, "SEC")
-        return model_response
+        # print("원본 모델 응답:", model_response)
         
-
-# worker = Worker()
-# f = open("1.txt", 'r')
-# result = worker.summarize(f.read())
-
-# print(result, type(result))
-# f.close()
+        # JSON 형식 처리
+        formatted_response = self.format_json_output(model_response)
+        final_json = json.dumps(formatted_response, ensure_ascii=False, indent=2)
+        
+        print("처리된 JSON 응답:", final_json)
+        print(time.time() - start, "SEC")
+        return final_json

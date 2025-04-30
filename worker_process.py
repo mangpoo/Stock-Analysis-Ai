@@ -1,6 +1,8 @@
 from workerClass import Worker
 from multiprocessing import Process, Queue
 
+# 크롤링 관련은 여기 추가됨
+
 def worker_loop(task_q: Queue):
     print("[Worker] Loading model...")
     worker = Worker()
