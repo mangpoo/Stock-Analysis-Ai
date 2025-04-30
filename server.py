@@ -20,6 +20,8 @@ worker_processes = []
 already_summarized_id_list = list() # 이미 요약된 id 저장
 if("summarized_articles" not in os.listdir()):
     os.mkdir("summarized_articles")
+SUMARTICLE_PATH = "summarized_articles/"
+
 
 # 워커 수
 WORKER_COUNT = 3  # 원하는 워커 프로세스 수를 여기에 설정
@@ -74,7 +76,7 @@ def check_workers_health():
 ### FLASK
 
 @app.route("/crawler", methods=['GET'])
-def test():
+def crawlingAndSave():
     # 워커 상태 확인
     active_workers = check_workers_health()
     if active_workers < WORKER_COUNT:
@@ -95,6 +97,21 @@ def test():
             return jsonify({"status": "started", "active_workers": active_workers, "file": f"temp/{id}.txt"})
         except Exception as e:
             return jsonify({"status": "error", "message": str(e)})
+
+@app.route("/getSummary/<string:id>", methods=['GET'])
+def getSummary(id):
+    sumFile = f"{id}.txt"
+    
+    if(sumFile in os.listdir(SUMARTICLE_PATH)):
+        f = open(SUMARTICLE_PATH + sumFile)
+        json_txt = f.read()
+        f.close()
+        dct = json.loads(json_txt)
+        return jsonify(dct)
+    elif(id in already_summarized_id_list):
+        return jsonify({"status" : "may be summarizing"})
+    else:
+        return jsonify({"status" : "Unknown Id, plz use crawling"})
 
 @app.route("/workers/status", methods=['GET'])
 def worker_status():

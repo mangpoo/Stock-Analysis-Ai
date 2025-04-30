@@ -38,6 +38,7 @@ Flask 기반 뉴스 요약 서버. 여러 개의 워커 프로세스를 사용�
   - 종료 시 `atexit`을 통해 모든 워커를 정리합니다.
 - 주요 라우트:
   - `/crawler`: 랜덤 ID로 요약 요청
+  - `/getSummary/<string:id>`: 요약된 json 요청(요약이 완료되어 저장된 경우에)
   - `/workers/status`: 워커 상태 확인
   - `/workers/restart`: 워커 재시작
 
