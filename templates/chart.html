@@ -47,6 +47,13 @@
     // 통화 단위 설정
     const currency = "{{ currency }}";  // 서버에서 전달된 currency 값을 JavaScript에서 사용
     const ip = "{{ ip }}";
+    
+    const currentLocale = window.navigator.languages[0];
+    const myPriceFormatter = Intl.NumberFormat(currentLocale, {
+    style: 'currency',
+    currency: `${currency}`, // Currency for data points
+    }).format;
+
     // 차트 만들기
     const chart = LightweightCharts.createChart(document.getElementById('chart'), {
       width: document.getElementById('chart').clientWidth,
@@ -63,6 +70,13 @@
         },
       },
     });
+    
+    chart.applyOptions({
+        localization: {
+            priceFormatter: myPriceFormatter,
+        },
+    });
+
 
     const volumeChart = LightweightCharts.createChart(document.getElementById('volume-chart'), {
       width: document.getElementById('volume-chart').clientWidth,
