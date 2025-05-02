@@ -7,26 +7,49 @@ from flask_cors import CORS
 import random
 import atexit
 import json
+from _thread import *
 from worker_process import worker_loop
 
 app = Flask("__name__")
 CORS(app)
 
 # 작업 큐
-task_q = Queue()
+task_q = Queue() # id가 들어가고 worker_loop에서 처리됨
 # 워커 프로세스 목록
 worker_processes = []
 
 already_summarized_id_list = list() # 이미 요약된 id 저장
 if("summarized_articles" not in os.listdir()):
     os.mkdir("summarized_articles")
-SUMARTICLE_PATH = "summarized_articles/"
+SUMARTICLE_PATH = "summarized_articles/" # 요약 기사 저장소
 
 
-# 워커 수
+FORCED_SUMMARIZING = False # 캐쉬 혹은 저장 여부 상관 없이 요약 시도 - 테스트용
 WORKER_COUNT = 3  # 원하는 워커 프로세스 수를 여기에 설정
 
 # 모든 워커 프로세스를 종료하는 함수
+
+def already_summarized_id_list_checker_thread():
+    # already_summarized_id_list <- 현재 작업중인 id를 가진 캐쉬
+    # 이를 작업이 완료된 id가 있는 경우 제거하여 업데이트
+    while(True):
+        lst = os.listdir(SUMARTICLE_PATH)
+        updated = False
+        try:
+            for id in already_summarized_id_list:
+                if(f"{id}.txt" in lst):
+                    already_summarized_id_list.remove(id)
+                    updated = True
+                    break
+        except Exception as e:
+            # print("cache update Exception")
+            continue
+
+        if(updated): print("cache updated", already_summarized_id_list)
+        time.sleep(0.2)
+
+
+# 워커 종료 함수
 def terminate_workers():
     print("종료 중... 모든 워커 프로세스를 정리합니다.")
     for p in worker_processes:
@@ -72,9 +95,22 @@ def check_workers_health():
     
     return len([p for p in worker_processes if p.is_alive()])
 
-
+    
 ### FLASK
 
+#### worker process & crawling 시작점
+# task_q에 id를 넣고 작업을 요청한 자에게 현 상태를 json 형태로 return한다.
+def worker_process_start(id, active_workers):
+    try:
+        print("===== start =====", id) 
+        already_summarized_id_list.append(id) # id 추가
+        print(already_summarized_id_list, "in worker_process_start")
+        task_q.put(id)
+        return jsonify({"status": "started", "active_workers": active_workers, "file": f"temp/{id}.txt"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+# 크롤링 및 요약을 요청하는 라우트
 @app.route("/crawler", methods=['GET'])
 def crawlingAndSave():
     # 워커 상태 확인
@@ -83,21 +119,21 @@ def crawlingAndSave():
         print(f"경고: {WORKER_COUNT}개 중 {active_workers}개의 워커만 활성화되어 있습니다.")
     
     id = random.randint(1, 5)
-    if(f"{id}.txt" in os.listdir("summarized_articles")): # 디렉터리에 저장된 요약이 있는 경우
-        return jsonify({"status" : "already_exist"})
-    
-    elif(id in already_summarized_id_list): # 이미 서버가 동작한 이후 요약한 id인 경우(아마 요약중일때)
-        return jsonify({"status" : "may be summarizing..."})
+    if(not FORCED_SUMMARIZING): # 테스트중이 아니면
+        if(f"{id}.txt" in os.listdir("summarized_articles")): # 디렉터리에 저장된 요약이 있는 경우
+            return jsonify({"status" : "already_exist"})
         
-    else: # 디렉터리에 저장된 요약이 없다면 크롤링 및 요약을 시도한다.
-        try:
-            print("===== start =====", id) 
-            already_summarized_id_list.append(id) # id 추가
-            task_q.put(id)
-            return jsonify({"status": "started", "active_workers": active_workers, "file": f"temp/{id}.txt"})
-        except Exception as e:
-            return jsonify({"status": "error", "message": str(e)})
+        elif(id in already_summarized_id_list): # 이미 서버가 동작한 이후 요약한 id인 경우(아마 요약중일때)
+            return jsonify({"status" : "may be summarizing..."})
+            
+        else: # 디렉터리에 저장된 요약이 없다면 크롤링 및 요약을 시도한다.
+            return worker_process_start(id, active_workers)
+    else: # 테스트는 반드시 요약시도
+        return worker_process_start(id, active_workers)
+### //
 
+
+# 저장소에 저장된 요약된 기사를 요청하는 라우트
 @app.route("/getSummary/<string:id>", methods=['GET'])
 def getSummary(id):
     sumFile = f"{id}.txt"
@@ -113,6 +149,8 @@ def getSummary(id):
     else:
         return jsonify({"status" : "Unknown Id, plz use crawling"})
 
+
+# 각 worker의 상태를 리턴
 @app.route("/workers/status", methods=['GET'])
 def worker_status():
     active_workers = check_workers_health()
@@ -122,12 +160,20 @@ def worker_status():
         "worker_pids": [p.pid for p in worker_processes if p.is_alive()]
     })
 
+
+# worker 강제 재시작하는 라우트 get 요청시 worker가 초기화 된다.
 @app.route("/workers/restart", methods=['GET'])
 def restart_workers():
     start_worker_pool()
     return jsonify({"status": "success", "message": f"{WORKER_COUNT}개의 워커 프로세스가 재시작되었습니다."})
 
+
+
+
+
 if __name__ == "__main__":
+    #캐쉬 관리 스레드 시작
+    start_new_thread(already_summarized_id_list_checker_thread, ())
     # 프로그램 종료 시 워커 프로세스 정리를 위한 핸들러 등록
     atexit.register(terminate_workers)
     

@@ -7,9 +7,8 @@ import io
 import sys
 from threading import Lock
 
-MODEL_NAME = "google/gemma-3-1b-it"
-# MODEL_NAME = "google/gemma-3-4b-it"
-STREAMER_ENABLE = True
+MODEL_NAME = "google/gemma-3-1b-it" # 모델
+STREAMER_ENABLE = True # streamer 사용 여부
 
 class Worker:
     def __init__(self, worker_id=0):
