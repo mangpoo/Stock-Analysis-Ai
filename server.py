@@ -45,7 +45,7 @@ def already_summarized_id_list_checker_thread():
             # print("cache update Exception")
             continue
 
-        if(updated): print("cache updated", already_summarized_id_list)
+        if(updated): print("===== cache updated", already_summarized_id_list, "=====")
         time.sleep(0.2)
 
 
