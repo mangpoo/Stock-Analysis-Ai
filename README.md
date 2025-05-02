@@ -17,7 +17,7 @@ Flask 기반 뉴스 요약 서버. 여러 개의 워커 프로세스를 사용�
 
 ```
 프로젝트 루트
-├── aerver.py               # Flask 웹 서버 및 워커 프로세스 관리
+├── server.py               # Flask 웹 서버 및 워커 프로세스 관리
 ├── worker_process.py       # 각 워커 프로세스가 하는 일 정의 (작업 루프)
 ├── workerClass.py          # 텍스트 요약 로직이 들어있는 클래스
 ├── summarized_articles/    # 요약된 결과들이 저장되는 폴더
