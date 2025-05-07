@@ -1,33 +1,30 @@
 import time
 import os
 import signal
+import subprocess
 from multiprocessing import Queue, Process
-from flask import Flask, jsonify, request, Response
+from flask import Flask, jsonify, request, Response, render_template
 from flask_cors import CORS
 import random
 import atexit
 import json
 from _thread import *
 from worker_process import worker_loop
+from workerClass import *
+
+SUMARTICLE_PATH = "summarized_articles/" # 요약 기사 저장소
+FORCED_SUMMARIZING = True # 캐쉬 혹은 저장 여부 상관 없이 요약 시도 - 테스트용
+WORKER_COUNT = 3  # 워커 프로세스 수를 여기에 설정
 
 app = Flask("__name__")
 CORS(app)
 
 # 작업 큐
 task_q = Queue() # id가 들어가고 worker_loop에서 처리됨
-# 워커 프로세스 목록
-worker_processes = []
+worker_processes = [] # 워커 프로세스 목록
 
 already_summarized_id_list = list() # 이미 요약된 id 저장
-if("summarized_articles" not in os.listdir()):
-    os.mkdir("summarized_articles")
-SUMARTICLE_PATH = "summarized_articles/" # 요약 기사 저장소
-
-
-FORCED_SUMMARIZING = False # 캐쉬 혹은 저장 여부 상관 없이 요약 시도 - 테스트용
-WORKER_COUNT = 3  # 원하는 워커 프로세스 수를 여기에 설정
-
-# 모든 워커 프로세스를 종료하는 함수
+if("summarized_articles" not in os.listdir()): os.mkdir("summarized_articles") # sum_articles 디렉터리 생성
 
 def already_summarized_id_list_checker_thread():
     # already_summarized_id_list <- 현재 작업중인 id를 가진 캐쉬
@@ -119,15 +116,16 @@ def crawlingAndSave():
         print(f"경고: {WORKER_COUNT}개 중 {active_workers}개의 워커만 활성화되어 있습니다.")
     
     id = random.randint(1, 5)
+
     if(not FORCED_SUMMARIZING): # 테스트중이 아니면
         if(f"{id}.txt" in os.listdir("summarized_articles")): # 디렉터리에 저장된 요약이 있는 경우
             return jsonify({"status" : "already_exist"})
-        
         elif(id in already_summarized_id_list): # 이미 서버가 동작한 이후 요약한 id인 경우(아마 요약중일때)
             return jsonify({"status" : "may be summarizing..."})
-            
         else: # 디렉터리에 저장된 요약이 없다면 크롤링 및 요약을 시도한다.
             return worker_process_start(id, active_workers)
+        
+
     else: # 테스트는 반드시 요약시도
         return worker_process_start(id, active_workers)
 ### //
@@ -169,6 +167,42 @@ def restart_workers():
 
 
 
+@app.route("/gpu/status")
+def gpu_status():
+    try:
+        output = subprocess.check_output(["rocm-smi"], text=True)
+        lines = output.splitlines()
+
+        # 본문 데이터 줄만 추출 (표의 헤더 아래에 있는 라인)
+        data_lines = [line for line in lines if line.strip().startswith("0")]  # GPU ID가 0부터 시작
+
+        cols = data_lines[0].split()
+
+        parsed = []
+        parsed.append({
+            "Device": cols[0],
+            "Temp": cols[4],
+            "Power": cols[5],
+            "SCLK": cols[9],
+            "MCLK": cols[10],
+            "Fan": cols[11],
+            "VRAM%": cols[14],
+            "GPU%": cols[-1]
+        })
+
+        return jsonify(parsed)
+
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
+
+
+@app.route("/monitor", methods = ['GET'])
+def monitor():
+    base_port = 8000
+    iframe_count = WORKER_COUNT
+    ports = [base_port + i for i in range(iframe_count)]
+    return render_template("monitor.html", ports = ports)
 
 
 if __name__ == "__main__":

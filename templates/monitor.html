@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>실시간 워커 모니터링</title>
+    <style id="theme-style">
+        /* 기본: 다크모드 */
+        :root {
+            --bg-color: #121212;
+            --text-color: #e0e0e0;
+            --bar-bg: #1f1f1f;
+            --table-bg: #1e1e1e;
+            --thead-bg: #2c2c2c;
+            --border-color: #333;
+        }
+
+        body {
+            margin: 0;
+            font-family: sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+
+        .status-bar {
+            background: var(--bar-bg);
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .status-bar span {
+            margin-right: 30px;
+            font-weight: bold;
+        }
+
+        .iframe-container {
+            display: flex;
+            width: 100vw;
+            height: calc(100vh - 100px);
+        }
+
+        .iframe-container iframe {
+            flex: 1;
+            height: 100%;
+            border: none;
+        }
+
+        h3 {
+            color: var(--text-color);
+            margin: 10px;
+        }
+
+        table {
+            background-color: var(--table-bg);
+            color: var(--text-color);
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: var(--thead-bg);
+        }
+
+        td, th {
+            border: 1px solid var(--border-color);
+            padding: 5px;
+        }
+
+        .theme-toggle {
+            margin: 10px;
+            padding: 5px 10px;
+            background-color: var(--thead-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="status-bar">
+        <span id="total">총 워커: 로딩 중...</span>
+        <span id="active">활성 워커: 로딩 중...</span>
+        <span id="pids">PID: 로딩 중...</span>
+        <button class="theme-toggle" onclick="toggleTheme()">🌙/☀️ 모드 전환</button>
+    </div>
+
+    <div style="padding: 10px;">
+        <h3>GPU 상태</h3>
+        <table id="gpu-table">
+            <thead>
+                <tr>
+                    <th>Device</th><th>Temp</th><th>Power</th><th>SCLK</th><th>MCLK</th><th>Fan</th><th>VRAM%</th><th>GPU%</th>
+                </tr>
+            </thead>
+            <tbody id="gpu-body">
+                <tr><td colspan="8">로딩 중...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="iframe-container">
+        {% for port in ports %}
+            <iframe src="http://minjun0410.iptime.org:{{ port }}"></iframe>
+        {% endfor %}
+    </div>
+
+<script>
+    let dark_state = localStorage.getItem("theme") === "dark";
+
+    function sendThemeToIframes() {
+        const iframes = document.querySelectorAll("iframe");
+        iframes.forEach(iframe => {
+            iframe.contentWindow.postMessage({ type: "theme", dark: dark_state }, "*");
+        });
+    }
+
+    // iframe 로드 후 테마 메시지 전송
+    window.addEventListener("load", () => {
+        setTimeout(sendThemeToIframes, 1000); // iframe이 다 로드될 시간 확보
+    });
+
+    async function loadWorkerStatus() {
+        try {
+            const res = await fetch("/workers/status");
+            const data = await res.json();
+            document.getElementById("total").innerText = `총 워커: ${data.total_workers}`;
+            document.getElementById("active").innerText = `활성 워커: ${data.active_workers}`;
+            document.getElementById("pids").innerText = `PID: ${data.worker_pids.join(', ')}`;
+        } catch {
+            document.getElementById("total").innerText = "총 워커: 오류";
+            document.getElementById("active").innerText = "활성 워커: 오류";
+            document.getElementById("pids").innerText = "PID: 오류";
+        }
+    }
+
+    async function loadGpuStatus() {
+        const tbody = document.getElementById("gpu-body");
+        try {
+            const res = await fetch("/gpu/status");
+            const data = await res.json();
+
+            if (data.error) {
+                tbody.innerHTML = `<tr><td colspan="8">오류: ${data.error}</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = "";
+            data.forEach(row => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${row.Device}</td>
+                        <td>${row.Temp}</td>
+                        <td>${row.Power}</td>
+                        <td>${row.SCLK}</td>
+                        <td>${row.MCLK}</td>
+                        <td>${row.Fan}</td>
+                        <td>${row["VRAM%"]}</td>
+                        <td>${row["GPU%"]}</td>
+                    </tr>`;
+            });
+        } catch {
+            tbody.innerHTML = `<tr><td colspan="8">GPU 상태 로딩 실패</td></tr>`;
+        }
+    }
+
+    function toggleTheme() {
+        const isDark = localStorage.getItem("theme") === "dark";
+        const root = document.documentElement;
+        const themeStyle = document.getElementById("theme-style");
+
+        if (isDark) {
+            dark_state = false;
+            root.style.setProperty("--bg-color", "#ffffff");
+            root.style.setProperty("--text-color", "#000000");
+            root.style.setProperty("--bar-bg", "#eeeeee");
+            root.style.setProperty("--table-bg", "#ffffff");
+            root.style.setProperty("--thead-bg", "#dddddd");
+            root.style.setProperty("--border-color", "#cccccc");
+            localStorage.setItem("theme", "light");
+        } else {
+            dark_state = true;
+            root.style.setProperty("--bg-color", "#121212");
+            root.style.setProperty("--text-color", "#e0e0e0");
+            root.style.setProperty("--bar-bg", "#1f1f1f");
+            root.style.setProperty("--table-bg", "#1e1e1e");
+            root.style.setProperty("--thead-bg", "#2c2c2c");
+            root.style.setProperty("--border-color", "#333");
+            localStorage.setItem("theme", "dark");
+        }
+
+        console.log(dark_state)
+        sendThemeToIframes();
+    }
+
+    function applySavedTheme() {
+        if (localStorage.getItem("theme") === "light") {
+            toggleTheme(); // 기본은 다크모드이므로 라이트일 경우 전환
+        }
+    }
+
+    applySavedTheme();
+    loadWorkerStatus();
+    loadGpuStatus();
+
+    // const darkMode = true; // 또는 false. 동적으로 설정할 수도 있음.
+
+
+
+    setInterval(loadGpuStatus, 2000);
+    setInterval(loadWorkerStatus, 2000);
+
+</script>
+
+</body>
+</html>

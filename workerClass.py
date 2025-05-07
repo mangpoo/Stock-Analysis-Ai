@@ -8,19 +8,63 @@ import sys
 from threading import Lock
 
 MODEL_NAME = "google/gemma-3-1b-it" # 모델
-STREAMER_ENABLE = True # streamer 사용 여부
+CONSOLE_PRINT = False # streamer 사용 여부
+
+class CustomStreamer:
+    def __init__(self, tokenizer, id, log, console_print):
+        self.id = id
+        self.tokenizer = tokenizer
+        self.skip_prompt = True
+        self.skip_special_tokens = True
+        self.log = log
+        self.console_print = console_print
+        
+    def put(self, text_id):
+        if self.skip_prompt and not hasattr(self, "_is_prompt_skipped"):
+            self._is_prompt_skipped = True
+            return
+        
+        # 토큰 디코딩
+        text = self.tokenizer.decode(
+            text_id, skip_special_tokens=self.skip_special_tokens
+        )
+        
+        if text:
+            # print(f"\033[{31 + self.id % 6}m{text}\033[0m", end = '')
+            if(self.console_print): print(text, end ='')
+            self.log.append_word(text)
+    
+    def end(self):
+        self.log.reset()
+        pass
+
+class WorkerLog:
+    def __init__(self):
+       self.log = ""
+
+    def reset(self):
+        self.log = ""
+
+    def append_word(self, word):
+        self.log += word
+
+    def get(self):
+        return self.log
+
 
 class Worker:
-    def __init__(self, worker_id=0):
+    def __init__(self, worker_id, worker_log):
         self.idx = worker_id
         self.isBusy = 0
         self.model = None
         self.tokenizer = None 
-        self.streamer = None
         self.load_model()
-        f = open("prompt.txt", 'r')
+        self.log = worker_log
+
+        f = open("prompt.txt", 'r') # load prompt
         self.prompt_content = f.read()
         f.close()
+
         print(f"\033[{31 + self.idx % 6}m[Worker {self.idx}]\033[0m: 초기화 완료")
         
     def load_model(self):
@@ -42,9 +86,8 @@ class Worker:
             device_map="auto",
         ).to(self.device)
         model.eval()
-        
-        streamer = TextStreamer(tokenizer, skip_prompt=True, skip_special_tokens=True)
-        self.model, self.tokenizer, self.streamer = model, tokenizer, streamer
+
+        self.model, self.tokenizer = model, tokenizer
         print(f"\033[{31 + self.idx % 6}m[Worker {self.idx}]\033[0m: 모델 로딩 완료")
     
     def get_prompt(self, text:str):
@@ -122,28 +165,18 @@ class Worker:
         inputs = self.tokenizer(self.get_prompt(text), return_tensors="pt").to(self.device)
         prompt_length = len(inputs.input_ids[0])
         
-        # TextStreamer를 사용한 실시간 출력
-        if(STREAMER_ENABLE):
-            print(f"\033[{31 + self.idx % 6}m[Worker {self.idx}]\033[0m: 생성 시작 (실시간 출력)...")
-            output = self.model.generate(
-                **inputs,
-                do_sample=True,
-                temperature=0.2,
-                top_k=50,
-                top_p=0.95,
-                max_new_tokens=512,
-                streamer=self.streamer,  # 스트리머 활성화
-            )
-        else:
-            print(f"\033[{31 + self.idx % 6}m[Worker {self.idx}]\033[0m: 생성 시작 ...")
-            output = self.model.generate( # 스트리머 없이
-                **inputs,
-                do_sample=True,
-                temperature=0.2,
-                top_k=50,
-                top_p=0.95,
-                max_new_tokens=512,
-            )
+        # CustomStreamer를 사용한 실시간 출력
+        print(f"\033[{31 + self.idx % 6}m[Worker {self.idx}]\033[0m: 생성 시작 (실시간 출력)...")
+        output = self.model.generate(
+            **inputs,
+            do_sample=True,
+            temperature=0.2,
+            top_k=50,
+            top_p=0.95,
+            max_new_tokens=512,
+            # streamer=self.streamer,  # 스트리머 활성화
+            streamer = CustomStreamer(self.tokenizer, self.idx, self.log, console_print=CONSOLE_PRINT) # 커스텀
+        )
         
         # 최종 응답 생성
         model_response = self.tokenizer.decode(
