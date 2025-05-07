@@ -36,20 +36,19 @@ class CustomStreamer:
     
     def end(self):
         self.log.reset()
-        pass
 
 class WorkerLog:
     def __init__(self):
-       self.log = ""
+       self.log = []
 
     def reset(self):
-        self.log = ""
+        self.log.clear()
 
     def append_word(self, word):
-        self.log += word
+        self.log.append(word)
 
     def get(self):
-        return self.log
+        return ''.join(self.log)
 
 
 class Worker:
