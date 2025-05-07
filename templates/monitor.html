@@ -104,7 +104,15 @@
     </div>
 
 <script>
-    let dark_state = localStorage.getItem("theme") === "dark";
+    let dark_state = null;
+
+    if(localStorage.getItem("theme") == null){
+        localStorage.setItem("theme", "dark");
+        dark_state = true;
+    }
+    else{
+        dark_state = localStorage.getItem("theme") === "dark";
+    }
 
     function sendThemeToIframes() {
         const iframes = document.querySelectorAll("iframe");
