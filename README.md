@@ -45,7 +45,8 @@ Flask 기반 뉴스 요약 서버. 여러 개의 워커 프로세스를 사용�
 
     dark
     
-    ![Image](https://github.com/user-attachments/assets/2b21ae50-d7c7-4b50-9327-7f82681c669b)
+    
+    <img src=https://github.com/user-attachments/assets/2b21ae50-d7c7-4b50-9327-7f82681c669b width="400" height="200"></img>
  
     light
     
