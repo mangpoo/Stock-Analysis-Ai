@@ -50,7 +50,7 @@ Flask 기반 뉴스 요약 서버. 여러 개의 워커 프로세스를 사용�
  
     light
     
-    <img src=https://github.com/user-attachments/assets/5545edc4-6e05-4819-a921-812f92e82bb9) width="600" height="300"></img>
+    <img src=https://github.com/user-attachments/assets/5545edc4-6e05-4819-a921-812f92e82bb9 width="600" height="300"></img>
 
 ### 2. `worker_process.py`: 워커의 작업 루프 정의
 
