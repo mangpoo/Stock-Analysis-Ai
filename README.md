@@ -42,6 +42,8 @@ Flask 기반 뉴스 요약 서버. 여러 개의 워커 프로세스를 사용�
   - `/workers/status`: 워커 상태 확인
   - `/workers/restart`: 워커 재시작
   - `/monitor` : 워커 들의 상태, 실시간 스트림 및 서버 GPU 상태
+    ![Image](https://github.com/user-attachments/assets/2b21ae50-d7c7-4b50-9327-7f82681c669b)
+    ![Image](https://github.com/user-attachments/assets/5545edc4-6e05-4819-a921-812f92e82bb9)
 
 ### 2. `worker_process.py`: 워커의 작업 루프 정의
 
