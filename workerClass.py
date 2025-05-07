@@ -8,7 +8,7 @@ import sys
 from threading import Lock
 
 MODEL_NAME = "google/gemma-3-1b-it" # 모델
-CONSOLE_PRINT = False # streamer 사용 여부
+CONSOLE_PRINT = False # 콘솔 출력 여부
 
 class CustomStreamer:
     def __init__(self, tokenizer, id, log, console_print):
@@ -173,7 +173,6 @@ class Worker:
             top_k=50,
             top_p=0.95,
             max_new_tokens=512,
-            # streamer=self.streamer,  # 스트리머 활성화
             streamer = CustomStreamer(self.tokenizer, self.idx, self.log, console_print=CONSOLE_PRINT) # 커스텀
         )
         
@@ -191,7 +190,8 @@ class Worker:
         
         elapsed = time.time() - start
         print(f"\033[{31 + self.idx % 6}m[Worker {self.idx}]\033[0m: 처리 완료 ({elapsed:.2f}초)")
-        print(f"\033[{31 + self.idx % 6}m[Worker {self.idx}]\033[0m: 최종 JSON:\n{final_json}")
+        # print(f"\033[{31 + self.idx % 6}m[Worker {self.idx}]\033[0m: 최종 JSON:")
+        # print(f"{final_json.__str__()}")
         
         return final_json
     

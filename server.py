@@ -3,7 +3,7 @@ import os
 import signal
 import subprocess
 from multiprocessing import Queue, Process
-from flask import Flask, jsonify, request, Response, render_template
+from flask import Flask, jsonify, request, Response, render_template, render_template_string
 from flask_cors import CORS
 import random
 import atexit
@@ -11,12 +11,41 @@ import json
 from _thread import *
 from worker_process import worker_loop
 from workerClass import *
+from ansi2html import Ansi2HTMLConverter
 
 SUMARTICLE_PATH = "summarized_articles/" # 요약 기사 저장소
 FORCED_SUMMARIZING = True # 캐쉬 혹은 저장 여부 상관 없이 요약 시도 - 테스트용
 WORKER_COUNT = 3  # 워커 프로세스 수를 여기에 설정
 
-app = Flask("__name__")
+
+
+# import logging # flask log off
+# log_setObj = logging.getLogger('werkzeug')
+# log_setObj.setLevel(logging.ERROR)
+
+
+log_queue = Queue() # for /stream
+class StreamInterceptor:
+    def __init__(self, original):
+        self.original = original
+
+    def write(self, message):
+        if message.strip():  # 빈 줄 제외
+            log_queue.put(message)
+        self.original.write(message)  # 콘솔에도 그대로 출력
+
+    def flush(self):
+        self.original.flush()
+
+sys.stdout = StreamInterceptor(sys.stdout)
+sys.stderr = StreamInterceptor(sys.stderr)
+conv = Ansi2HTMLConverter(inline=True) # ansi to html 컨버터 -- 색상표현을 위함
+
+
+
+
+
+app = Flask("__name__") # 메인 flask 서버
 CORS(app)
 
 # 작업 큐
@@ -42,7 +71,7 @@ def already_summarized_id_list_checker_thread():
             # print("cache update Exception")
             continue
 
-        if(updated): print("===== cache updated", already_summarized_id_list, "=====")
+        if(updated): print(f"===== cache updated {already_summarized_id_list} =====")
         time.sleep(0.2)
 
 
@@ -68,7 +97,7 @@ def start_worker_pool():
     # 지정된 수의 워커 프로세스 시작
     for i in range(WORKER_COUNT):
         print(f"워커 프로세스 #{i+1} 시작 중...")
-        p = Process(target=worker_loop, args=(task_q, i))  # 워커 ID 전달
+        p = Process(target=worker_loop, args=(task_q, i, log_queue))  # 워커 ID 전달
         p.daemon = True  # 메인 프로세스 종료 시 함께 종료되도록 설정
         p.start()
         worker_processes.append(p)
@@ -99,9 +128,8 @@ def check_workers_health():
 # task_q에 id를 넣고 작업을 요청한 자에게 현 상태를 json 형태로 return한다.
 def worker_process_start(id, active_workers):
     try:
-        print("===== start =====", id) 
+        print(f"===== work_id : {id} -- started =====") 
         already_summarized_id_list.append(id) # id 추가
-        print(already_summarized_id_list, "in worker_process_start")
         task_q.put(id)
         return jsonify({"status": "started", "active_workers": active_workers, "file": f"temp/{id}.txt"})
     except Exception as e:
@@ -195,7 +223,34 @@ def gpu_status():
     except Exception as e:
         return jsonify({"error": str(e)})
 
+###
+@app.route('/')
+def index():
+    return render_template_string("""
+    <html>
+    <head><title>실시간 로그 보기</title></head>
+    <body>
+        <h2>실시간 로그</h2>
+        <div id="log" style="white-space: pre-wrap; font-family: monospace;"></div>
+        <script>
+            const evtSource = new EventSource("/stream");
+            evtSource.onmessage = e => {
+                document.getElementById("log").innerHTML += e.data + "<br>";
+            };
+        </script>
+    </body>
+    </html>
+    """)
 
+@app.route('/stream')
+def stream():
+    def event_stream():
+        while True:
+            message = log_queue.get()
+            converted_message = conv.convert(message, full=False)
+            yield f"data: {converted_message.strip()}\n\n"
+    return Response(event_stream(), content_type='text/event-stream')
+###
 
 @app.route("/monitor", methods = ['GET'])
 def monitor():
@@ -204,13 +259,12 @@ def monitor():
     ports = [base_port + i for i in range(iframe_count)]
     return render_template("monitor.html", ports = ports)
 
-
 if __name__ == "__main__":
     #캐쉬 관리 스레드 시작
     start_new_thread(already_summarized_id_list_checker_thread, ())
     # 프로그램 종료 시 워커 프로세스 정리를 위한 핸들러 등록
     atexit.register(terminate_workers)
-    
+
     # 워커 풀 시작
     if os.environ.get("FLASK_WORKERS_STARTED") != "true":
         os.environ["FLASK_WORKERS_STARTED"] = "true"

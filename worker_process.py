@@ -31,33 +31,26 @@ def run_flask_server(app, port):
     app.run("0.0.0.0", port = port, debug = False)
 
 
-
-
-
-
-def worker_loop(task_queue, worker_id):
+def worker_loop(task_queue, worker_id, parent_log_queue):
     """각 워커 프로세스의 메인 루프"""
     
     log = WorkerLog() # 생성 문자열 저장
     
-    worker = Worker(worker_id=worker_id, worker_log=log)
-    print(f"\033[{31 + worker_id % 6}m[Worker {worker_id}]\033[0m: 준비 완료. 작업 대기 중...")
-    
-    ###
     app = create_flask_app(worker_id=worker_id,log=log)
     port = 8000 + worker_id
 
     flask_thread = threading.Thread(target=run_flask_server, args=(app, port), daemon=True)
     flask_thread.start()
-    ###
 
+    worker = Worker(worker_id=worker_id, worker_log=log)
+    print(f"\033[{31 + worker_id % 6}m[Worker {worker_id}]\033[0m: 준비 완료. 작업 대기 중...")
 
     while True:
         try:
             # 큐에서 작업 가져오기
             id = task_queue.get()
             print(f"\033[{31 + worker_id % 6}m[Worker {worker_id}]\033[0m: 새 작업 받음")
-            
+
             # 테스트용 코드
             # 크롤링이 여기서 수행되고 worker.summarize()함수를 통해 요약이 시작
             # 이후 디렉터리에 저장한다.
@@ -68,6 +61,7 @@ def worker_loop(task_queue, worker_id):
             # 작업 처리
             result = worker.summarize(txt) # 요약
             
+            #저장
             f = open(f"summarized_articles/{id}.txt", 'w')
             f.write(result)
             f.close()

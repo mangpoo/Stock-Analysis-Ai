@@ -28,7 +28,7 @@
         }
 
         .status-bar span {
-            margin-right: 30px;
+            margin-right: 100px;
             font-weight: bold;
         }
 
@@ -97,11 +97,32 @@
         </table>
     </div>
 
+    <!-- 스트리머 추가 -->
+    <div style="padding: 10px;">
+        <h3>로그 출력</h3>
+        <div id="log-output" style="
+            background-color: var(--table-bg);
+            color: var(--text-color);
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 0.9em;
+        "></div>
+    </div>
+
     <div class="iframe-container">
         {% for port in ports %}
             <iframe src="http://minjun0410.iptime.org:{{ port }}"></iframe>
         {% endfor %}
     </div>
+    
+    
+
+    
+
 
 <script>
     let dark_state = null;
@@ -215,6 +236,18 @@
 
     setInterval(loadGpuStatus, 2000);
     setInterval(loadWorkerStatus, 2000);
+
+    const logBox = document.getElementById("log-output");
+    const logEventSource = new EventSource("/stream");
+
+    logEventSource.onmessage = function(event) {
+        const atBottom = logBox.scrollHeight - logBox.scrollTop <= logBox.clientHeight + 10;
+        logBox.innerHTML += event.data + "<br>";  // HTML을 그대로 삽입
+        if (atBottom) {
+            logBox.scrollTop = logBox.scrollHeight;  // 자동 스크롤
+        }
+    };
+
 
 </script>
 
