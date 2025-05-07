@@ -9,7 +9,7 @@ import datetime as dt
 
 import searcher
 
-HOST = "192.168.0.18"
+HOST = "127.0.0.1" # server ip
 
 search_obj = None
 app = Flask(__name__)
