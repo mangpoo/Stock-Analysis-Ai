@@ -30,25 +30,11 @@ class CustomStreamer:
         )
         
         if text:
-            # print(f"\033[{31 + self.id % 6}m{text}\033[0m", end = '')
             if(self.console_print): print(text, end ='')
-            self.log.append_word(text)
+            self.log.put(text)
     
     def end(self):
-        self.log.reset()
-
-class WorkerLog:
-    def __init__(self):
-       self.log = []
-
-    def reset(self):
-        self.log.clear()
-
-    def append_word(self, word):
-        self.log.append(word)
-
-    def get(self):
-        return ''.join(self.log)
+        self.log.put("\n############### END ###############\n\n")
 
 
 class Worker:

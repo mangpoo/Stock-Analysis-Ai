@@ -1,13 +1,13 @@
 from workerClass import Worker
-from workerClass import WorkerLog
 from multiprocessing import Process, Queue
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, Response
 from flask_cors import CORS
 import threading
 
 
 # 로그서버
-def create_flask_app(worker_id, log):
+def create_flask_app(worker_id):
+    worker_stream_queue = Queue()
     app = Flask(f"worker_{worker_id}")
     CORS(app)
     
@@ -19,13 +19,18 @@ def create_flask_app(worker_id, log):
     def index():
         # HTML 템플릿 (인라인으로 정의)
         return render_template("index.html", worker_id=worker_id)
+
+    @app.route('/stream')
+    def stream():
+        def event_stream():
+            while True:
+                message = worker_stream_queue.get()
+                if("\n" in message):
+                    message = message.replace("\n", "<br>")
+                yield f"data: {message}\n\n"
+        return Response(event_stream(), content_type='text/event-stream')
     
-    @app.route('/get-logs')
-    def get_logs():
-        current_log = log.get()  # 현재 로그 가져오기
-        return jsonify({'log': current_log})
-    
-    return app
+    return app, worker_stream_queue
 
 def run_flask_server(app, port):
     app.run("0.0.0.0", port = port, debug = False)
@@ -34,15 +39,15 @@ def run_flask_server(app, port):
 def worker_loop(task_queue, worker_id, parent_log_queue):
     """각 워커 프로세스의 메인 루프"""
     
-    log = WorkerLog() # 생성 문자열 저장
-    
-    app = create_flask_app(worker_id=worker_id,log=log)
+    # log stream 서버 생성
+    app, worker_stream_queue = create_flask_app(worker_id=worker_id)
     port = 8000 + worker_id
-
     flask_thread = threading.Thread(target=run_flask_server, args=(app, port), daemon=True)
-    flask_thread.start()
+    flask_thread.start() # log stream 서버 스레드 시작
+    
 
-    worker = Worker(worker_id=worker_id, worker_log=log)
+    # gemma worker 생성
+    worker = Worker(worker_id=worker_id, worker_log=worker_stream_queue)
     print(f"\033[{31 + worker_id % 6}m[Worker {worker_id}]\033[0m: 준비 완료. 작업 대기 중...")
 
     while True:

@@ -52,31 +52,21 @@
 </head>
 <body>
     <h3>워커 {{worker_id}} 실시간 로그</h3>
-    <div id="log-container">...</div>
+    <div id="log-container"></div>
 
     <script>
         const logContainer = document.getElementById('log-container');
-        let lastLog = '';
+        
+        
+        const logEventSource = new EventSource("/stream")
 
-        function fetchLogs() {
-            fetch('/get-logs')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.log !== lastLog) {
-                        lastLog = data.log;
-                        logContainer.innerText = data.log;
-                        logContainer.scrollTop = logContainer.scrollHeight;
-                    }
-                })
-                .catch(error => {
-                    logContainer.innerText = '로그 가져오기 실패: ' + error;
-                })
-                .finally(() => {
-                    setTimeout(fetchLogs, 100);
-                });
+        logEventSource.onmessage = function(event){
+            const atBottom = logContainer.scrollHeight - logContainer.scrollTop <= logContainer.clientHeight + 10;
+            logContainer.innerHTML += event.data;
+            if(atBottom){
+                logContainer.scrollTop = logContainer.scrollHeight;
+            }
         }
-
-        fetchLogs();
     </script>
 </body>
 </html>
