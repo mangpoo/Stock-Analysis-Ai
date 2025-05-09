@@ -2,6 +2,8 @@ from workerClass import Worker
 from multiprocessing import Process, Queue
 from flask import Flask, request, jsonify, render_template, Response
 from flask_cors import CORS
+import os
+import json
 import threading
 
 
@@ -53,22 +55,25 @@ def worker_loop(task_queue, worker_id, parent_log_queue):
     while True:
         try:
             # 큐에서 작업 가져오기
-            id = task_queue.get()
-            print(f"\033[{31 + worker_id % 6}m[Worker {worker_id}]\033[0m: 새 작업 받음")
-
-            # 테스트용 코드
-            # 크롤링이 여기서 수행되고 worker.summarize()함수를 통해 요약이 시작
-            # 이후 디렉터리에 저장한다.
-            f = open(f"temp/{id}.txt", 'r') # for test
-            txt = f.read() # for test
-            f.close() # for test
+            article_dct = task_queue.get()
+            print(f"\033[{31 + worker_id % 6}m[Worker {worker_id}]\033[0m: 새 작업 받음 :: {article_dct['id']}")
             
             # 작업 처리
-            result = worker.summarize(txt) # 요약
-            
+            if(f"{article_dct['id']}.txt" in os.listdir("summarized_articles/")):
+                print(f"{article_dct['id']} already exist")
+                continue
+
+            result_json_from_model = worker.summarize(article_dct['content']) # 요약
+
+            save_dct = json.loads(result_json_from_model)
+            save_dct['title'] = article_dct['title']
+            save_dct['date'] = article_dct['date']
+            save_dct['link'] = article_dct['link']
+            save_data = json.dumps(save_dct, ensure_ascii=False)
+            print(save_data)
             #저장
-            f = open(f"summarized_articles/{id}.txt", 'w')
-            f.write(result)
+            f = open(f"summarized_articles/{article_dct['id']}.txt", 'w')
+            f.write(save_data)
             f.close()
             #####
 

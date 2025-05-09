@@ -12,9 +12,10 @@ from _thread import *
 from worker_process import worker_loop
 from workerClass import *
 from ansi2html import Ansi2HTMLConverter
+from crawler import crawling
 
 SUMARTICLE_PATH = "summarized_articles/" # 요약 기사 저장소
-FORCED_SUMMARIZING = True # 캐쉬 혹은 저장 여부 상관 없이 요약 시도 - 테스트용
+FORCED_SUMMARIZING = False # 캐쉬 혹은 저장 여부 상관 없이 요약 시도 - 테스트용
 WORKER_COUNT = 3  # 워커 프로세스 수를 여기에 설정
 
 
@@ -126,36 +127,34 @@ def check_workers_health():
 
 #### worker process & crawling 시작점
 # task_q에 id를 넣고 작업을 요청한 자에게 현 상태를 json 형태로 return한다.
-def worker_process_start(id, active_workers):
-    try:
-        print(f"===== work_id : {id} -- started =====") 
-        already_summarized_id_list.append(id) # id 추가
-        task_q.put(id)
-        return jsonify({"status": "started", "active_workers": active_workers, "file": f"temp/{id}.txt"})
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)})
+def worker_process_start(task, active_workers):
+    print(f"===== work_id : {task['id']} -- started =====") 
+    already_summarized_id_list.append(task['id']) # id 추가
+    task_q.put(task)
 
 # 크롤링 및 요약을 요청하는 라우트
-@app.route("/crawler", methods=['GET'])
-def crawlingAndSave():
+@app.route("/crawler/<string:ticker>", methods=['GET'])
+def crawlingAndSave(ticker):
+    print(ticker)
     # 워커 상태 확인
     active_workers = check_workers_health()
     if active_workers < WORKER_COUNT:
         print(f"경고: {WORKER_COUNT}개 중 {active_workers}개의 워커만 활성화되어 있습니다.")
-    
-    id = random.randint(1, 5)
 
-    if(not FORCED_SUMMARIZING): # 테스트중이 아니면
-        if(f"{id}.txt" in os.listdir("summarized_articles")): # 디렉터리에 저장된 요약이 있는 경우
-            return jsonify({"status" : "already_exist"})
-        elif(id in already_summarized_id_list): # 이미 서버가 동작한 이후 요약한 id인 경우(아마 요약중일때)
-            return jsonify({"status" : "may be summarizing..."})
-        else: # 디렉터리에 저장된 요약이 없다면 크롤링 및 요약을 시도한다.
-            return worker_process_start(id, active_workers)
-        
+    id_lst = list()
+    try:
+        articles = crawling(ticker, 5) # list
 
-    else: # 테스트는 반드시 요약시도
-        return worker_process_start(id, active_workers)
+        for article_dct in articles:
+            id = f"{ticker}_{article_dct['date']}"
+            article_dct['id'] = id
+            id_lst.append(id)
+
+            worker_process_start(article_dct, active_workers)
+
+        return jsonify({"success" : [f"minjun0410.iptime.org:5000/getSummary/{id}" for id in sorted(id_lst)]})
+    except:
+        return jsonify({"error" : "unknown"})
 ### //
 
 
@@ -173,7 +172,7 @@ def getSummary(id):
     elif(id in already_summarized_id_list):
         return jsonify({"status" : "may be summarizing"})
     else:
-        return jsonify({"status" : "Unknown Id, plz use crawling"})
+        return jsonify({"status" : "Unknown Id"})
 
 
 # 각 worker의 상태를 리턴
