@@ -6,7 +6,7 @@ Flask 기반 뉴스 요약 서버. 여러 개의 워커 프로세스를 사용�
 
 ## 주요 기능
 
-- `/crawler`: 요약 요청 (현재는 랜덤 ID로, 나중에는 크롤링을 위해 `/crawler/<id>` 형식으로 확장)
+- `/crawler/<크롤링할 단어>`: 크롤링 및 요약 요청
 - `/workers/status`: 워커 상태 확인
 - `/workers/restart`: 워커 재시작
 
@@ -75,6 +75,7 @@ Flask 기반 뉴스 요약 서버. 여러 개의 워커 프로세스를 사용�
     <img src=https://github.com/user-attachments/assets/5545edc4-6e05-4819-a921-812f92e82bb9 width="600" height="300"></img>
 
   - `/test`: 테스트페이지
+    <img src="https://github.com/user-attachments/assets/fe94fe19-4d04-4b43-8cf4-c8345a8012f1" width="600" height="600"></img>
 
 
 ### 2. `worker_process.py`: 워커의 작업 루프 정의
