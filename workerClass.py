@@ -10,7 +10,7 @@ from threading import Lock
 MODEL_NAME = "google/gemma-3-1b-it" # 모델
 CONSOLE_PRINT = False # 콘솔 출력 여부
 
-class CustomStreamer: # 종종 버그 이유 불명 ㅠㅠ
+class CustomStreamer: 
     def __init__(self, tokenizer, id, log, console_print):
         self.id = id
         self.tokenizer = tokenizer
@@ -35,6 +35,7 @@ class CustomStreamer: # 종종 버그 이유 불명 ㅠㅠ
     
     def end(self):
         self.log.put("\n############### END ###############\n\n")
+        self.log._reset()
 
 
 

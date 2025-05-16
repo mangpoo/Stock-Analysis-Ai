@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>뉴스 요약 테스트</title>
+</head>
+<body>
+    <h1>티커 기반 뉴스 요약</h1>
+    <input type="text" id="ticker" placeholder="예: AAPL">
+    <button onclick="submitTicker()">확인</button>
+    
+    <div id="result"></div>
+
+    <script>
+        async function submitTicker() {
+            const ticker = document.getElementById("ticker").value;
+            const resultDiv = document.getElementById("result");
+            resultDiv.innerHTML = "요청 중...";
+
+            try {
+                const res = await fetch(`/crawler/${ticker}`);
+                const data = await res.json();
+
+                if (data.success) {
+                    resultDiv.innerHTML = "<h3>요약 링크:</h3>";
+                    data.success.forEach(async url => {
+                        const p = document.createElement("p");
+                        p.textContent = `요약 중... (${url})`;
+                        resultDiv.appendChild(p);
+
+                        // 실시간 상태 확인 (최대 30초 대기)
+                        const summary = await waitForSummary(url, 30);
+                        p.textContent = `${url} → ${summary}`;
+                    });
+                } else {
+                    resultDiv.textContent = "에러 발생: " + JSON.stringify(data);
+                }
+            } catch (e) {
+                resultDiv.textContent = "요청 실패: " + e;
+            }
+        }
+
+        async function waitForSummary(url, timeoutSec = 30) {
+            const start = Date.now();
+            while ((Date.now() - start) / 1000 < timeoutSec) {
+                const res = await fetch(url);
+                const data = await res.json();
+
+                if (!data.status) {
+                    return data.summary || JSON.stringify(data); // 요약 결과
+                }
+
+                if (data.status === "Unknown Id") {
+                    return "요약 실패";
+                }
+
+                await new Promise(resolve => setTimeout(resolve, 1000)); // 1초 대기
+            }
+            return "시간 초과";
+        }
+    </script>
+</body>
+</html>

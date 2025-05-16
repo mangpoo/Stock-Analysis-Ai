@@ -13,7 +13,7 @@ def crawling(stock_key_word:str, article_cnt:int) -> list:
     load_dotenv()
 # 검색 키워드와 인증 정보
     search_keyword = stock_key_word
-    client_id = "EkLgi5TM5MAklKXFqwqD"  # 보통은 .env로 이동
+    client_id = os.getenv("CLIENT_ID")
     client_secret = os.getenv('CLIENT_SECRET_KEY')
 
     # 검색어 인코딩
@@ -82,4 +82,4 @@ def crawling(stock_key_word:str, article_cnt:int) -> list:
     return filtered_results
 
 
-print(crawling("005930", 1))
+# print(crawling("005930", 1))

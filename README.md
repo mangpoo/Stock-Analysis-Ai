@@ -23,6 +23,7 @@ Flask 기반 뉴스 요약 서버. 여러 개의 워커 프로세스를 사용�
 ├── crawler.py          # 크롤링을 위한 함수가 저장되어 있는 파일
 ├── summarized_articles/    # 요약된 결과들이 저장되는 폴더
 ├── temp/                   # 임시 원문 텍스트 파일들 저장 위치 - 테스트용
+├── templates/              # html들
 ├── requirements.txt        # 필요한 라이브러리 목록
 └── README.md               # 이 설명 파일
 ```
@@ -41,11 +42,11 @@ Flask 기반 뉴스 요약 서버. 여러 개의 워커 프로세스를 사용�
   - `/crawler/<string:ticker>`: 입력된 티커에 대한 뉴스를 찾음 최신 기준으로 5개. 5개의 뉴스에 대한 id 반환
     반환 형식
     ```
-    0	"minjun0410.iptime.org:5000/getSummary/000270_202505091133"
-    1	"minjun0410.iptime.org:5000/getSummary/000270_202505091359"
-    2	"minjun0410.iptime.org:5000/getSummary/000270_202505091552"
-    3	"minjun0410.iptime.org:5000/getSummary/000270_202505091631"
-    4	"minjun0410.iptime.org:5000/getSummary/000270_202505091658"
+    0	"http://minjun0410.iptime.org:5000/getSummary/000270_202505091133"
+    1	"http://minjun0410.iptime.org:5000/getSummary/000270_202505091359"
+    2	"http://minjun0410.iptime.org:5000/getSummary/000270_202505091552"
+    3	"http://minjun0410.iptime.org:5000/getSummary/000270_202505091631"
+    4	"http://minjun0410.iptime.org:5000/getSummary/000270_202505091658"
     ```
   - `/getSummary/<string:id>`: 요약된 json 요청(요약이 완료되어 저장된 경우에)
     반환 형식
@@ -56,7 +57,7 @@ Flask 기반 뉴스 요약 서버. 여러 개의 워커 프로세스를 사용�
       issue	"한화 그룹 계열사 주가 상승세, 특히 한화솔루션, 한화비전, 한화갤러리아, 한화생명, 한화손해보험, 한화리츠 등의 주가 상승세가 두드러진다."
       link	"https://n.news.naver.com/mnews/article/011/0004483150?sid=101"
       related_tickers	[]
-      title	"조선·방산에 반도체·태양광까지 터졌다…한화그룹株 '고공 행진' [마켓..."
+      title	"조선·방산에 반도체·태양광까지 터졌다…한화그룹株 '고공 행진'"
     }
     ```
 
@@ -72,6 +73,9 @@ Flask 기반 뉴스 요약 서버. 여러 개의 워커 프로세스를 사용�
     light
     
     <img src=https://github.com/user-attachments/assets/5545edc4-6e05-4819-a921-812f92e82bb9 width="600" height="300"></img>
+
+  - `/test`: 테스트페이지
+
 
 ### 2. `worker_process.py`: 워커의 작업 루프 정의
 

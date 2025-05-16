@@ -152,7 +152,7 @@ def crawlingAndSave(ticker):
 
             worker_process_start(article_dct, active_workers)
 
-        return jsonify({"success" : [f"minjun0410.iptime.org:5000/getSummary/{id}" for id in sorted(id_lst)]})
+        return jsonify({"success" : [f"http://minjun0410.iptime.org:5000/getSummary/{id}" for id in sorted(id_lst)]})
     except:
         return jsonify({"error" : "unknown"})
 ### //
@@ -161,18 +161,19 @@ def crawlingAndSave(ticker):
 # 저장소에 저장된 요약된 기사를 요청하는 라우트
 @app.route("/getSummary/<string:id>", methods=['GET'])
 def getSummary(id):
+    timeout = 30
+    waited = 0
+    interval = 1
     sumFile = f"{id}.txt"
+
+    while(waited < timeout):
+        if(sumFile in os.listdir(SUMARTICLE_PATH)):
+            with open(os.path.join(SUMARTICLE_PATH, sumFile)) as f:
+                return jsonify(json.loads(f.read()))
+        time.sleep(interval)
+        waited += interval
     
-    if(sumFile in os.listdir(SUMARTICLE_PATH)):
-        f = open(SUMARTICLE_PATH + sumFile)
-        json_txt = f.read()
-        f.close()
-        dct = json.loads(json_txt)
-        return jsonify(dct)
-    elif(id in already_summarized_id_list):
-        return jsonify({"status" : "may be summarizing"})
-    else:
-        return jsonify({"status" : "Unknown Id"})
+    return jsonify({"status" : "summarize_error -- timeout"})
 
 
 # 각 worker의 상태를 리턴
@@ -250,6 +251,11 @@ def stream():
             yield f"data: {converted_message.strip()}\n\n"
     return Response(event_stream(), content_type='text/event-stream')
 ###
+
+@app.route("/test")
+def test_page():
+    return render_template("test.html")
+
 
 @app.route("/monitor", methods = ['GET'])
 def monitor():
