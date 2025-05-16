@@ -75,6 +75,7 @@ Flask 기반 뉴스 요약 서버. 여러 개의 워커 프로세스를 사용�
     <img src=https://github.com/user-attachments/assets/5545edc4-6e05-4819-a921-812f92e82bb9 width="600" height="300"></img>
 
   - `/test`: 테스트페이지
+  
     <img src="https://github.com/user-attachments/assets/fe94fe19-4d04-4b43-8cf4-c8345a8012f1" width="600" height="600"></img>
 
 
