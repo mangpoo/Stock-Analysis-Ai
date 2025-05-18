@@ -6,10 +6,64 @@ from pykrx import stock
 import yfinance as yf
 import os
 import datetime as dt
-
+import pickle
 import searcher
 
-HOST = "127.0.0.1" # server ip
+dtObj = dt.datetime.now()
+
+cache_dct = None
+
+HOST = "localhost" # server ip
+CACHE_FILE = f"{dtObj.year}{dtObj.month}{dtObj.day}.p"
+
+def get_change_rate_for_cache(ticker):
+    fromdate = dt.datetime.now() - dt.timedelta(days = 14)
+    enddate = dt.datetime.now()
+    
+    fromdate = f"{fromdate.year}-{fromdate.month}-{fromdate.day}"
+    enddate = f"{enddate.year}-{enddate.month}-{enddate.day}"
+
+    try:
+        df = yf.download(ticker, start=fromdate, end=enddate)
+        print(df)
+        # 필요한 데이터 선택 및 포맷 변경
+        df = df[['Open', 'High', 'Low', 'Close', 'Volume']]
+        df.reset_index(inplace=True)
+        df["Date"] = pd.to_datetime(df["Date"]).dt.strftime('%Y-%m-%d')  # 날짜 포맷
+        df["Change Rate"] = (df["Close"].pct_change() * 100).fillna("")  # 등락률 계산
+        df.columns = ['date', 'open', 'high', 'low', 'close', 'volume', 'change_rate']
+
+        change_rate = df['change_rate'].tolist()[-1]
+        yesterday_close = df['close'].tolist()[-1]
+
+        return {"change_rate":float(change_rate),"yesterday_close" : float(yesterday_close)}
+    except Exception as e:
+        return {"error" : "empty"}
+
+def make_cache(): # us cache
+    global cache_dct
+    if(CACHE_FILE in os.listdir("cache")):
+        with open(f"cache/{CACHE_FILE}", 'rb') as f:
+            cache_dct = pickle.load(f)
+
+        print(cache_dct)
+        print("Cache Loaded!")
+
+    else:
+        cache_dct = dict()
+        ticker_lst = search_obj.us_get_recommend_stocks()['ticker'].values
+
+        for ticker in ticker_lst:
+            temp = get_change_rate_for_cache(ticker=ticker)
+            cache_dct[ticker] = temp
+        
+        with open(f"cache/{CACHE_FILE}", 'wb') as f:
+            pickle.dump(cache_dct, f)
+        
+        print("Cache Saved!")
+        
+### // cache work // ###
+
 
 search_obj = None
 app = Flask(__name__)
@@ -85,40 +139,21 @@ def find(name):
 def get_change_rate(country, ticker):
 
     if(country == 'kr'):
+        from_date = dt.datetime.now() - dt.timedelta(days = 14)
+        from_date = f"{from_date.year}{from_date.month if(from_date.month >= 10) else '0' + str(from_date.month)}{from_date.day if(from_date.day >= 10)else '0' + from_date.day.__str__()}"
         yesterday_date = dt.datetime.now() - dt.timedelta(days = 1)
-        yesterday_date = f"{yesterday_date.year}{yesterday_date.month if(yesterday_date.month >= 10) else '0' + str(yesterday_date.month)}{yesterday_date.day}"
+        yesterday_date = f"{yesterday_date.year}{yesterday_date.month if(yesterday_date.month >= 10) else '0' + str(yesterday_date.month)}{yesterday_date.day if(yesterday_date.day >= 10)else '0' + yesterday_date.day.__str__()}"
         try:
-            df = stock.get_market_ohlcv_by_date(fromdate=yesterday_date, todate=yesterday_date, ticker = ticker)
-            change_rate = df['등락률'][0]
-            yesterday_close = df['종가'][0]
+            print(yesterday_date)
+            df = stock.get_market_ohlcv_by_date(fromdate=from_date, todate=yesterday_date, ticker = ticker)
+            change_rate = df['등락률'][-1]
+            yesterday_close = df['종가'][-1]
         except Exception as e:
             return jsonify({"error" : "empty"})
         return jsonify({"change_rate":float(change_rate),"yesterday_close" : int(yesterday_close)})
     else: # US
-        fromdate = dt.datetime.now() - dt.timedelta(days = 5)
-        enddate = dt.datetime.now()
-        
-        fromdate = f"{fromdate.year}-{fromdate.month}-{fromdate.day}"
-        enddate = f"{enddate.year}-{enddate.month}-{enddate.day}"
-
-        try:
-            df = yf.download(ticker, start=fromdate, end=enddate)
-            print(df)
-            # 필요한 데이터 선택 및 포맷 변경
-            df = df[['Open', 'High', 'Low', 'Close', 'Volume']]
-            df.reset_index(inplace=True)
-            df["Date"] = pd.to_datetime(df["Date"]).dt.strftime('%Y-%m-%d')  # 날짜 포맷
-            df["Change Rate"] = (df["Close"].pct_change() * 100).fillna("")  # 등락률 계산
-            df.columns = ['date', 'open', 'high', 'low', 'close', 'volume', 'change_rate']
-
-            change_rate = df['change_rate'].tolist()[-1]
-            yesterday_close = df['close'].tolist()[-1]
-
-            return jsonify({"change_rate":float(change_rate),"yesterday_close" : float(yesterday_close)})
-        
-
-        except Exception as e:
-            return jsonify({"error" : "empty"})
+        print(cache_dct[ticker.upper()])
+        return jsonify(cache_dct[ticker.upper()])
 
 
 
@@ -185,5 +220,8 @@ def logo(country, ticker):
 
 if __name__ == '__main__':
     search_obj = searcher.Searcher()
-    app.run(host = "0.0.0.0", port = 5000, debug=True)
+    make_cache()
+    print(os.listdir("cache"))
+    print(CACHE_FILE)
+    app.run(host = "0.0.0.0", port = 8080, debug=True)
 

@@ -116,7 +116,7 @@
     });
 
     // API 요청
-    const apiUrl = `http://${ip}:5000/${country}/${ticker}/${startDate}/${endDate}`; // local
+    const apiUrl = `http://${ip}:8080/${country}/${ticker}/${startDate}/${endDate}`; // local
 
     fetch(apiUrl)
       .then(res => res.json())
