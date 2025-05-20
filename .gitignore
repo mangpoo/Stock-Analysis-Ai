@@ -1,5 +1,6 @@
 *.pyc
 __pycache__/
 cache/
+temp_data/
 test.ipynb
 TEMP_forNameChange.ipynb
