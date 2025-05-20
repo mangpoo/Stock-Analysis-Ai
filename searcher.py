@@ -7,64 +7,57 @@ import datetime as dt
 class Searcher:
     def __init__(self):
         self.conn = sqlite3.connect("stockInfo.db", check_same_thread=False)  
+        self.search_query = """
+        SELECT ticker, stock_name, 'KR_Stock' as source FROM KR_Stock
+        WHERE stock_name LIKE ? OR ticker LIKE ?
+
+        UNION ALL
+        SELECT ticker, en_stock_name AS stock_name, 'KR_EN_names' as source FROM KR_EN_names
+        WHERE en_stock_name LIKE ? OR ticker LIKE ?
+
+        UNION ALL
+        SELECT ticker, kr_stock_name AS stock_name, 'us_kr_names' as source FROM us_kr_names
+        WHERE kr_stock_name LIKE ? OR ticker LIKE ?
+
+        UNION ALL
+        SELECT ticker, stock_name, 'AMEX_Stock' as source FROM AMEX_Stock
+        WHERE stock_name LIKE ? OR ticker LIKE ?
+
+        UNION ALL
+        SELECT ticker, stock_name, 'NSDQ_Stock' as source FROM NSDQ_Stock
+        WHERE stock_name LIKE ? OR ticker LIKE ?
+
+        UNION ALL
+        SELECT ticker, stock_name, 'NYSE_Stock' as source FROM NYSE_Stock
+        WHERE stock_name LIKE ? OR ticker LIKE ?
+
+        LIMIT 100;
+        """
         print("Searcher Ready")
 
-
-
-    def __check_with_korean(self, input_string : str):
-        if re.search("[가-힣]", input_string):
-            return True
-        else:
-            return False
-
-
-
-    def searcher(self, input_string : str):
-        print(input_string)
-        if(self.__check_with_korean(input_string)): # only korean
-            return self.__kr_search(input_string=input_string)
-        else:
-            return self.__en_search(input_string=input_string) # with English
-
-
-
-    def __kr_search(self, input_string : str):
+    def search_stocks(self, keyword):
         cur = self.conn.cursor()
-        cur.execute(f"""select ticker, stock_name, market_Type
-                        from kr_stock
-                        where stock_name like '%{input_string}%';""")
-        data = cur.fetchall()
-        if(len(data) == 0): return None
 
+        keyword_like = f"%{keyword}%"
+        cur.execute(self.search_query, [keyword_like] * 12)
+        rows = cur.fetchall()
 
-        df = pd.DataFrame(data)
-        df.columns = ['ticker', 'stock_name', 'market_type']
-        return df
+        # 우선순위: 실제 거래소 테이블 우선
+        priority = {
+            'NSDQ_Stock': 1,
+            'NYSE_Stock': 2,
+            'AMEX_Stock': 3,
+            'KR_Stock': 4,
+            'KR_EN_names': 5,
+            'us_kr_names': 6
+        }
 
+        seen = {}
+        for ticker, name, source in rows:
+            if ticker not in seen or priority[source] < priority[seen[ticker]["source"]]:
+                seen[ticker] = {"ticker": ticker, "name": name, "source": source}
 
-
-    def __en_search(self, input_string : str):
-        cur = self.conn.cursor()
-        cur.execute(f"""select kr_en_names.ticker, en_stock_name, market_type 
-                        from kr_en_names, kr_stock 
-                        where en_stock_name like '%{input_string}%' and kr_stock.ticker = kr_en_names.ticker;""")
-        kr = cur.fetchall()
-
-        us = list()
-        for market_type in ["amex", "nsdq", "nyse"]:
-            cur.execute(f"""select ticker, stock_name, market_type
-                            from {market_type}_stock
-                            where stock_name like '%{input_string}%';""")
-            us.append(cur.fetchall())
-        
-        result = kr + us[0] + us[1] + us[2]
-        if(len(result) == 0): return None
-
-
-        df = pd.DataFrame(result)
-        df.columns = ['ticker', 'stock_name', 'market_type']
-        return df
-    
+        return list(seen.values())
 
 
     def get_name_by_ticker(self, country, ticker):

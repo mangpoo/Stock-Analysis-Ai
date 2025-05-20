@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, render_template, send_file
+from flask import Flask, jsonify, render_template, send_file, request
 from flask_cors import CORS
 import pandas as pd
 import json
@@ -123,18 +123,15 @@ def us(ticker, start_date, end_date):
     except Exception as e:
         return jsonify({"error": str(e)})
     
+    
+@app.route('/search')
+def search():
+    keyword = request.args.get("q", "").strip()
+    if not keyword:
+        return jsonify({"error": "Missing search query"}), 400
 
-
-@app.route('/find/<string:name>', methods=['GET'])
-def find(name):
-    try:
-        df = search_obj.searcher(name)
-        if(type(df) != pd.DataFrame):
-            return jsonify({"error": "empty"})
-        json_result = df.to_dict(orient="records")
-        return jsonify(json_result)
-    except Exception as e:
-        return jsonify({"error": "empty"})
+    results = search_obj.search_stocks(keyword)
+    return jsonify(results)
 
 
 
@@ -219,6 +216,9 @@ def logo(country, ticker):
     
     return send_file(img, mimetype="image/png")
 
+@app.route('/test', methods=['GET'])
+def test():
+    return render_template("test.html")
 
 
 if __name__ == '__main__':

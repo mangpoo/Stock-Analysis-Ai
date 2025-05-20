@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>주식 검색 테스트</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    input { width: 300px; padding: 8px; }
+    ul { margin-top: 10px; list-style: none; padding: 0; }
+    li { padding: 4px 0; }
+    .empty { color: gray; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <h1>주식 검색 테스트</h1>
+  <input type="text" id="searchBox" placeholder="종목명 또는 티커 입력" autocomplete="off" />
+  <ul id="results"></ul>
+  <div id="emptyMessage" class="empty"></div>
+
+  <script>
+    const box = document.getElementById('searchBox');
+    const results = document.getElementById('results');
+    const emptyMessage = document.getElementById('emptyMessage');
+    let timeoutId;
+
+    box.addEventListener('input', () => {
+      clearTimeout(timeoutId);
+      const q = box.value.trim();
+      if (!q) {
+        results.innerHTML = '';
+        emptyMessage.textContent = '';
+        return;
+      }
+
+      timeoutId = setTimeout(async () => {
+        const res = await fetch(`/search?q=${encodeURIComponent(q)}`);
+        const data = await res.json();
+
+        results.innerHTML = '';
+        emptyMessage.textContent = '';
+
+        if (data.length === 0) {
+          emptyMessage.textContent = '검색 결과가 없습니다.';
+        } else {
+          data.forEach(({ ticker, name, source }) => {
+            const li = document.createElement('li');
+            li.textContent = `[${ticker}] ${name} (${source})`;
+            results.appendChild(li);
+          });
+        }
+      }, 300); // debounce
+    });
+  </script>
+</body>
+</html>

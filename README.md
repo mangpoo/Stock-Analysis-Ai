@@ -17,13 +17,13 @@ python server.py
 ### 1. 주식 검색 (JSON 반환)
 
 ```
-GET /find/문자열
+GET /search?q=검색할단어or문자 등
 ```
 
 예시  
 ```
-http://localhost:5000/find/삼성  
-http://localhost:5000/find/Samsung
+http://localhost:5000/search?q=삼성  
+http://localhost:5000/search?q=Samsung
 ```
 
 한국어 또는 영어 종목명을 검색하면 관련 주식 정보를 JSON으로 반환합니다.
