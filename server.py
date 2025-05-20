@@ -9,11 +9,14 @@ import datetime as dt
 import pickle
 import searcher
 
+if("cache" not in os.listdir()):
+    os.mkdir("cache")
+
 dtObj = dt.datetime.now()
 
 cache_dct = None
 
-HOST = "localhost" # server ip
+HOST = "192.168.0.18" # server ip
 CACHE_FILE = f"{dtObj.year}{dtObj.month}{dtObj.day}.p"
 
 def get_change_rate_for_cache(ticker):
