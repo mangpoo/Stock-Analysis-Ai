@@ -16,18 +16,17 @@ dtObj = dt.datetime.now()
 
 cache_dct = None
 
-HOST = "192.168.0.18" # server ip
+HOST = "172.17.154.182" # server ip
 CACHE_FILE = f"{dtObj.year}{dtObj.month}{dtObj.day}.p"
 
 def get_change_rate_for_cache(ticker):
-    fromdate = dt.datetime.now() - dt.timedelta(days = 14)
-    enddate = dt.datetime.now()
-    
-    fromdate = f"{fromdate.year}-{fromdate.month}-{fromdate.day}"
-    enddate = f"{enddate.year}-{enddate.month}-{enddate.day}"
+    from_date = dt.datetime.now() - dt.timedelta(days = 14)
+    from_date = f"{from_date.year}-{from_date.month if(from_date.month >= 10) else '0' + str(from_date.month)}-{from_date.day if(from_date.day >= 10)else '0' + from_date.day.__str__()}"
+    yesterday_date = dt.datetime.now() - dt.timedelta(days = 1)
+    yesterday_date = f"{yesterday_date.year}-{yesterday_date.month if(yesterday_date.month >= 10) else '0' + str(yesterday_date.month)}-{yesterday_date.day if(yesterday_date.day >= 10)else '0' + yesterday_date.day.__str__()}"
 
     try:
-        df = yf.download(ticker, start=fromdate, end=enddate)
+        df = yf.download(ticker, start=from_date, end=yesterday_date)
         print(df)
         # 필요한 데이터 선택 및 포맷 변경
         df = df[['Open', 'High', 'Low', 'Close', 'Volume']]
@@ -152,8 +151,28 @@ def get_change_rate(country, ticker):
             return jsonify({"error" : "empty"})
         return jsonify({"change_rate":float(change_rate),"yesterday_close" : int(yesterday_close)})
     else: # US
-        print(cache_dct[ticker.upper()])
-        return jsonify(cache_dct[ticker.upper()])
+        if(ticker.upper() in cache_dct.keys()):
+            print(cache_dct[ticker.upper()])
+            return jsonify(cache_dct[ticker.upper()])
+        else:
+            from_date = dt.datetime.now() - dt.timedelta(days = 14)
+            from_date = f"{from_date.year}-{from_date.month if(from_date.month >= 10) else '0' + str(from_date.month)}-{from_date.day if(from_date.day >= 10)else '0' + from_date.day.__str__()}"
+            yesterday_date = dt.datetime.now() - dt.timedelta(days = 1)
+            yesterday_date = f"{yesterday_date.year}-{yesterday_date.month if(yesterday_date.month >= 10) else '0' + str(yesterday_date.month)}-{yesterday_date.day if(yesterday_date.day >= 10)else '0' + yesterday_date.day.__str__()}"
+
+            df = yf.download(ticker, start=from_date, end=yesterday_date)
+            print(df)
+            # 필요한 데이터 선택 및 포맷 변경
+            df = df[['Open', 'High', 'Low', 'Close', 'Volume']]
+            df.reset_index(inplace=True)
+            df["Date"] = pd.to_datetime(df["Date"]).dt.strftime('%Y-%m-%d')  # 날짜 포맷
+            df["Change Rate"] = (df["Close"].pct_change() * 100).fillna("")  # 등락률 계산
+            df.columns = ['date', 'open', 'high', 'low', 'close', 'volume', 'change_rate']
+
+            change_rate = df['change_rate'].tolist()[-1]
+            yesterday_close = df['close'].tolist()[-1]
+
+            return jsonify({"change_rate":float(change_rate),"yesterday_close" : float(yesterday_close)})
 
 
 
@@ -215,6 +234,11 @@ def logo(country, ticker):
             img = path + ticker + ".png"
     
     return send_file(img, mimetype="image/png")
+
+@app.route("/get_kr_name/<string:ticker>")
+def get_kr_name_by_us_ticker(ticker):
+    stock_name_kr = search_obj.get_kr_name(ticker=ticker)
+    return jsonify({"name":stock_name_kr})
 
 @app.route('/test', methods=['GET'])
 def test():

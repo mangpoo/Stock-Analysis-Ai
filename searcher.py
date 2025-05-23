@@ -80,6 +80,18 @@ class Searcher:
         
         return stock_name
     
+    def get_kr_name(self, ticker):
+        cur = self.conn.cursor()
+        cur.execute(f"""select kr_stock_name from us_kr_names where ticker = '{ticker.upper()}';""")
+        name = cur.fetchall()
+        print(name)
+        if(len(name) != 0):
+            name = name[0][0]
+        else:
+            name = "N/A"
+
+        return name
+    
     
 
     def kr_get_recommend_stocks(self) -> pd.DataFrame:

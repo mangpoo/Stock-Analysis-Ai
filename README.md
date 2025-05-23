@@ -121,6 +121,12 @@ http://localhost:5000/recommend/kr
 
 ---
 
+### 7. 미국주식의 한국 이름
+
+```
+http://localhost:5000/get_kr_name/<string:ticker>
+```
+
 ## 주요 파일 구조
 
 - `server.py`: 서버 실행 파일
