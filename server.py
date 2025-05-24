@@ -16,7 +16,7 @@ dtObj = dt.datetime.now()
 
 cache_dct = None
 
-HOST = "172.17.154.182" # server ip
+HOST = "192.168.0.5" # server ip
 CACHE_FILE = f"{dtObj.year}{dtObj.month}{dtObj.day}.p"
 
 def get_change_rate_for_cache(ticker):
@@ -250,5 +250,5 @@ if __name__ == '__main__':
     make_cache()
     print(os.listdir("cache"))
     print(CACHE_FILE)
-    app.run(host = "0.0.0.0", port = 8080, debug=True)
+    app.run(host = "0.0.0.0", port = 5000, debug=True)
 
