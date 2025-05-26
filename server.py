@@ -8,6 +8,10 @@ import os
 import datetime as dt
 import pickle
 import searcher
+import subprocess
+
+ip = subprocess.run(["curl", "ifconfig.me"], capture_output=True, text=True).stdout
+print("ip =", ip)
 
 if("cache" not in os.listdir()):
     os.mkdir("cache")
@@ -16,7 +20,7 @@ dtObj = dt.datetime.now()
 
 cache_dct = None
 
-HOST = "3.34.180.44" # server ip
+HOST = ip # server ip
 CACHE_FILE = f"{dtObj.year}{dtObj.month}{dtObj.day}.p"
 
 def get_change_rate_for_cache(ticker):
@@ -48,7 +52,6 @@ def make_cache(): # us cache
         with open(f"cache/{CACHE_FILE}", 'rb') as f:
             cache_dct = pickle.load(f)
 
-        print(cache_dct)
         print("Cache Loaded!")
 
     else:
@@ -248,7 +251,5 @@ def test():
 if __name__ == '__main__':
     search_obj = searcher.Searcher()
     make_cache()
-    print(os.listdir("cache"))
-    print(CACHE_FILE)
     app.run(host = "0.0.0.0", port = 5000, debug=True)
 
