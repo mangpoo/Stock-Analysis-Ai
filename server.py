@@ -16,7 +16,7 @@ dtObj = dt.datetime.now()
 
 cache_dct = None
 
-HOST = "192.168.0.5" # server ip
+HOST = "minjun0410.iptime.org" # server ip
 CACHE_FILE = f"{dtObj.year}{dtObj.month}{dtObj.day}.p"
 
 def get_change_rate_for_cache(ticker):
