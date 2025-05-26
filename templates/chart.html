@@ -39,11 +39,27 @@
 
     // URL 파라미터 추출
     const pathParts = window.location.pathname.split('/');
+    console.log(pathParts.length);
     console.log(pathParts); 
-    const country = pathParts[3];
-    const ticker = pathParts[4];
-    const startDate = pathParts[5];
-    const endDate = pathParts[6];
+
+    var country = null;
+    var ticker = null;
+    var startDate = null;
+    var endDate = null;
+
+
+    if(pathParts.length == 6){
+      country = pathParts[2];
+      ticker = pathParts[3];
+      startDate = pathParts[4];
+      endDate = pathParts[5];
+    }
+    else{
+      country = pathParts[3];
+      ticker = pathParts[4];
+      startDate = pathParts[5];
+      endDate = pathParts[6];
+    }
 
     // 통화 단위 설정
     const currency = "{{ currency }}";  // 서버에서 전달된 currency 값을 JavaScript에서 사용
@@ -117,7 +133,9 @@
     });
 
     // API 요청
-	  const apiUrl = `/api/${country}/${ticker}/${startDate}/${endDate}`; // local
+	  const apiUrl =(pathParts.length != 6) ? `/api/${country}/${ticker}/${startDate}/${endDate}` : `/${country}/${ticker}/${startDate}/${endDate}`; // local
+
+    
 
     fetch(apiUrl)
       .then(res => res.json())
