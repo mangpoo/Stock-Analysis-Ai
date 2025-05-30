@@ -1,0 +1,24 @@
+.news-section {
+    background-color: #ffffff;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    height: 500px;
+    overflow-y: auto;
+  }
+  
+  .news-section h2 {
+    margin-bottom: 20px;
+  }
+  
+  .news-item {
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  
+  .news-item h3 {
+    font-size: 16px;
+    margin-bottom: 5px;
+  }
+  
