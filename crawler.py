@@ -13,14 +13,14 @@ load_dotenv()
 
 # 검색 키워드와 인증 정보
 search_keyword = '삼성전자'
-client_id = "EkLgi5TM5MAklKXFqwqD"  # 보통은 .env로 이동
+client_id = os.getenv('CLIENT_ID')
 client_secret = os.getenv('CLIENT_SECRET_KEY')
 
 # 검색어 인코딩
 encText = urllib.parse.quote(search_keyword)
 
 # 네이버 뉴스 API URL (최신순, 30개)
-url = f"https://openapi.naver.com/v1/search/news.json?query={encText}&start=1&display=30&sort=date"
+url = f"https://openapi.naver.com/v1/search/news.json?query={encText}&start=1&display=100&sort=date"
 
 # 요청 객체 및 헤더 설정
 request = urllib.request.Request(url)
