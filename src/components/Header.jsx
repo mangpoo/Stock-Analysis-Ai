@@ -1,3 +1,4 @@
+// Header.js
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGoogleLogin } from '@react-oauth/google';
@@ -42,7 +43,7 @@ export default function Header() {
         if (!query.trim()) {
             setResults([]);
             // 로그인 관련 메시지인 경우 여기서 메시지를 지우지 마십시오.
-            // setMessage(''); 
+            // setMessage('');
             setShowResults(false);
             return;
         }
@@ -90,7 +91,7 @@ export default function Header() {
         navigate(`/chart/${item.ticker}`, {
             state: {
                 stockName: item.name,
-                stockSource: item.source
+                stockType: item.source // 'stockSource' 대신 'stockType'으로 전달
             }
         });
         setQuery('');
@@ -195,7 +196,7 @@ export default function Header() {
             </div>
             {isLoggedIn ? (
                 <>
-                    {/* 선택 사항: 환영 메시지 
+                    {/* 선택 사항: 환영 메시지
                     {userName && <span style={{ color: 'white', marginRight: '15px' }}>{userName}님</span>}
                     */}
                     <button onClick={handleLogout} className="login-btn">로그아웃</button>

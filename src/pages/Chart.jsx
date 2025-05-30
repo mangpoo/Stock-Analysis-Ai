@@ -1,10 +1,9 @@
+// ChartPage.js
 import React, { useEffect, useState } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import MainLayout from '../components/MainLayout'; // 경로 확인 필요
 import ChartSection from '../components/ChartSection'; // 경로 확인 필요
 import API_CONFIG from '../config'; // config.jsx 파일의 상대 경로에 맞게 수정해주세요.
-
-// const SERVER_IP = "192.168.0.18:5000/api"; // 이 줄은 삭제합니다.
 
 export default function ChartPage() {
     const { ticker } = useParams();
@@ -13,17 +12,24 @@ export default function ChartPage() {
     const passedStockName = location.state?.stockName;
     const rawPassedStockPrice = location.state?.stockPrice;
     const passedStockChange = location.state?.stockChange;
-    const passedStockType = location.state?.stockType;
+    const passedStockType = location.state?.stockType; // Header.js에서 item.source가 여기에 전달됨
 
     const [stockName, setStockName] = useState(passedStockName || (ticker ? `종목 (${ticker})` : "종목 정보 로딩 중..."));
     const [stockPrice, setStockPrice] = useState("가격 정보 로딩 중...");
     const [stockChange, setStockChange] = useState(passedStockChange !== undefined ? passedStockChange : null);
     const [logoUrl, setLogoUrl] = useState('');
-    const [stockCountryCode, setStockCountryCode] = useState('kr');
+    const [stockCountryCode, setStockCountryCode] = useState('kr'); // 초기값은 'kr'로 유지
 
     useEffect(() => {
-        const country = (passedStockType && passedStockType.toLowerCase() === 'kr') ? 'kr' : 'us';
-        setStockCountryCode(country);
+        // passedStockType을 기반으로 country를 결정합니다.
+        // source 문자열의 앞 두 글자를 소문자로 변환하여 'kr'인지 확인합니다.
+        const country = (passedStockType && passedStockType.toLowerCase().substring(0, 2) === 'kr') ? 'kr' : 'us';
+        
+        console.log("ChartPage useEffect 실행됨.");
+        console.log("passedStockType (원본):", passedStockType);
+        console.log("결정된 country:", country); // 디버깅용: 실제 결정된 country 값 확인
+
+        setStockCountryCode(country); // 이 값을 상태로 저장
 
         if (passedStockName) {
             setStockName(passedStockName);
@@ -58,7 +64,8 @@ export default function ChartPage() {
             setStockChange(null);
 
             const apiUrl = API_CONFIG.endpoints.stockDetails(country, ticker); // API_CONFIG 사용
-            console.log(`StockTable 정보 부재로 API 요청: ${apiUrl}`);
+            console.log(`API_CONFIG.endpoints.stockDetails 호출 (country: ${country}, ticker: ${ticker})`); // API 호출 전 확인
+            console.log(`최종 API 요청 URL: ${apiUrl}`); // 이 줄을 추가합니다.
 
             fetch(apiUrl)
                 .then(res => {
@@ -79,7 +86,7 @@ export default function ChartPage() {
                     }
                     setStockPrice(formattedApiPrice);
                     setStockChange(data.change_rate !== undefined && data.change_rate !== null ? Number(data.change_rate) : null);
-                    
+
                     if (!passedStockName && data.stock_name) { // API에서 받은 종목명으로 업데이트
                         setStockName(data.stock_name);
                     }
@@ -90,7 +97,7 @@ export default function ChartPage() {
                     setStockChange(null);
                 });
         }
-    }, [ticker, passedStockName, rawPassedStockPrice, passedStockChange, passedStockType]); // SERVER_IP를 의존성 배열에서 제거
+    }, [ticker, passedStockName, rawPassedStockPrice, passedStockChange, passedStockType]); // passedStockType을 의존성 배열에 유지
 
     if (!ticker) {
         return (

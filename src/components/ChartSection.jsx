@@ -106,7 +106,7 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
     const day = today.getDate().toString().padStart(2, '0');
     const endDate = `${year}${month}${day}`;
 
-    const countryForChart = (stockCountryCode === 'us' || stockCountryCode === 'kr') ? stockCountryCode : 'kr';
+    const countryForChart = (stockCountryCode === 'us'   || stockCountryCode === 'kr') ? stockCountryCode : 'kr';
     // config.jsx의 chartIframe endpoint 사용
     const chartIframeSrc = API_CONFIG.endpoints.chartIframe(chartServerIp, countryForChart, ticker, startDate, endDate);
 
