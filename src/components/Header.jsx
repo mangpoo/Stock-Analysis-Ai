@@ -16,12 +16,18 @@ export default function Header() {
             Authorization: `Bearer ${tokenResponse.access_token}`,
           },
         });
+
         setUser(res.data); // Context에 사용자 정보 저장
+
+        // ✅ Flask 백엔드로 사용자 정보 전송
+        await axios.post('http://localhost:5000/login', res.data);
+        console.log("✅ 백엔드에 사용자 정보 전송 완료");
+
       } catch (error) {
-        console.error('사용자 정보 요청 실패:', error);
+        console.error('❌ 사용자 정보 요청 또는 백엔드 전송 실패:', error);
       }
     },
-    onError: err => console.error('로그인 실패:', err),
+    onError: err => console.error('❌ 로그인 실패:', err),
   });
 
   // 로그아웃 로직
