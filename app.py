@@ -1,5 +1,6 @@
 from flask import Flask, jsonify, send_from_directory, request, Response
 from flask_cors import CORS
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 import requests
 import pymysql
 import os
@@ -9,6 +10,7 @@ from dotenv import load_dotenv
 load_dotenv()
 SDS_SERVER_IP = os.getenv("SDS_SERVER_IP")
 SDS_SERVER_PORT = os.getenv("SDS_SERVER_PORT")
+JWT_SECRET = os.getenv("JWT_SECRET", "your-secret-key")  # .env에 JWT_SECRET 추가 추천
 
 print("✅ 서버 진입함")
 
@@ -18,6 +20,10 @@ app = Flask(__name__, static_folder=react_build_path, static_url_path='')
 
 # CORS 설정
 CORS(app, origins=["http://localhost:3000", "http://ddolddol2.duckdns.org"])
+
+# JWT 설정
+app.config["JWT_SECRET_KEY"] = JWT_SECRET
+jwt = JWTManager(app)
 
 # MySQL 연결 함수
 def get_connection():
@@ -31,7 +37,7 @@ def get_connection():
         cursorclass=pymysql.cursors.DictCursor
     )
 
-# 사용자 정보 저장
+# 로그인 및 JWT 토큰 발급
 @app.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
@@ -60,18 +66,32 @@ def login():
     finally:
         conn.close()
 
-    return jsonify({"status": "ok", "message": "사용자 정보 저장 완료"}), 200
+    # JWT 토큰 생성
+    access_token = create_access_token(identity=data['sub'])  # Google ID 기준
+    return jsonify({
+        "status": "ok",
+        "message": "사용자 정보 저장 및 토큰 발급 완료",
+        "token": access_token
+    }), 200
 
 # 최근 본 종목 추가
 @app.route('/recent', methods=['POST'])
+@jwt_required()
 def add_recent_stock():
     data = request.get_json()
-    user_id = data['user_id']
+    user_google_id = get_jwt_identity()
     stock_code = data['stock_code']
 
     conn = get_connection()
     try:
         with conn.cursor() as cursor:
+            # user_id 조회
+            cursor.execute("SELECT id FROM users WHERE google_id=%s", (user_google_id,))
+            result = cursor.fetchone()
+            if not result:
+                return jsonify({"status": "error", "message": "사용자 없음"}), 404
+            user_id = result['id']
+
             sql = "INSERT INTO recent_stocks (user_id, stock_code) VALUES (%s, %s)"
             cursor.execute(sql, (user_id, stock_code))
         conn.commit()
@@ -84,12 +104,19 @@ def add_recent_stock():
 
 # 최근 본 종목 조회
 @app.route('/recent', methods=['GET'])
+@jwt_required()
 def get_recent_stocks():
-    user_id = request.args.get('user_id')
+    user_google_id = get_jwt_identity()
 
     conn = get_connection()
     try:
         with conn.cursor() as cursor:
+            cursor.execute("SELECT id FROM users WHERE google_id=%s", (user_google_id,))
+            result = cursor.fetchone()
+            if not result:
+                return jsonify({"status": "error", "message": "사용자 없음"}), 404
+            user_id = result['id']
+
             sql = "SELECT stock_code, viewed_at FROM recent_stocks WHERE user_id=%s ORDER BY viewed_at DESC LIMIT 20"
             cursor.execute(sql, (user_id,))
             rows = cursor.fetchall()
@@ -102,14 +129,21 @@ def get_recent_stocks():
 
 # 관심 종목 추가
 @app.route('/favorite', methods=['POST'])
+@jwt_required()
 def add_favorite_stock():
     data = request.get_json()
-    user_id = data['user_id']
+    user_google_id = get_jwt_identity()
     stock_code = data['stock_code']
 
     conn = get_connection()
     try:
         with conn.cursor() as cursor:
+            cursor.execute("SELECT id FROM users WHERE google_id=%s", (user_google_id,))
+            result = cursor.fetchone()
+            if not result:
+                return jsonify({"status": "error", "message": "사용자 없음"}), 404
+            user_id = result['id']
+
             sql = "INSERT IGNORE INTO favorite_stocks (user_id, stock_code) VALUES (%s, %s)"
             cursor.execute(sql, (user_id, stock_code))
         conn.commit()
@@ -122,14 +156,21 @@ def add_favorite_stock():
 
 # 관심 종목 삭제
 @app.route('/favorite', methods=['DELETE'])
+@jwt_required()
 def delete_favorite_stock():
     data = request.get_json()
-    user_id = data['user_id']
+    user_google_id = get_jwt_identity()
     stock_code = data['stock_code']
 
     conn = get_connection()
     try:
         with conn.cursor() as cursor:
+            cursor.execute("SELECT id FROM users WHERE google_id=%s", (user_google_id,))
+            result = cursor.fetchone()
+            if not result:
+                return jsonify({"status": "error", "message": "사용자 없음"}), 404
+            user_id = result['id']
+
             sql = "DELETE FROM favorite_stocks WHERE user_id=%s AND stock_code=%s"
             cursor.execute(sql, (user_id, stock_code))
         conn.commit()
@@ -142,12 +183,19 @@ def delete_favorite_stock():
 
 # 관심 종목 조회
 @app.route('/favorite', methods=['GET'])
+@jwt_required()
 def get_favorite_stocks():
-    user_id = request.args.get('user_id')
+    user_google_id = get_jwt_identity()
 
     conn = get_connection()
     try:
         with conn.cursor() as cursor:
+            cursor.execute("SELECT id FROM users WHERE google_id=%s", (user_google_id,))
+            result = cursor.fetchone()
+            if not result:
+                return jsonify({"status": "error", "message": "사용자 없음"}), 404
+            user_id = result['id']
+
             sql = "SELECT stock_code, added_at FROM favorite_stocks WHERE user_id=%s ORDER BY added_at DESC"
             cursor.execute(sql, (user_id,))
             rows = cursor.fetchall()
