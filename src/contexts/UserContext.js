@@ -8,31 +8,12 @@ export function UserProvider({ children }) {
 
   // ✅ 마운트 시 localStorage에서 사용자 정보 불러오기 (예외 처리 포함)
   useEffect(() => {
-    try {
-      const savedUser = localStorage.getItem('user');
-      if (savedUser) {
-        const parsed = JSON.parse(savedUser);
-        if (parsed && typeof parsed === 'object') {
-          setUser(parsed);
-        }
-      }
-    } catch (err) {
-      console.warn('❌ 사용자 정보 로딩 실패:', err);
-      localStorage.removeItem('user');
-    }
+    // ⚠️ JWT 방식으로 전환되었기 때문에 사용자 정보는 localStorage에서 불러오지 않음
   }, []);
 
   // ✅ user 변경 시 localStorage에 반영
   useEffect(() => {
-    try {
-      if (user && typeof user === 'object') {
-        localStorage.setItem('user', JSON.stringify(user));
-      } else {
-        localStorage.removeItem('user');
-      }
-    } catch (err) {
-      console.warn('❌ 사용자 정보 저장 실패:', err);
-    }
+    // ⚠️ JWT 방식으로 전환되었기 때문에 사용자 정보를 localStorage에 저장하지 않음
   }, [user]);
 
   return (

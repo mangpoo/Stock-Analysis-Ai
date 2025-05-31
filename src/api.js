@@ -3,7 +3,7 @@ import axios from 'axios';
 
 // ✅ Flask 백엔드와 통신하는 axios 인스턴스 생성
 const api = axios.create({
-  baseURL: 'http://localhost:5000', // 👉 배포 시 도메인으로 변경
+  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000', // 👉 배포 시 도메인으로 변경
   withCredentials: false,           // CORS 쿠키 안 쓸 거면 false
 });
 
@@ -26,6 +26,8 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       console.warn('🔐 인증이 필요한 요청입니다.');
       // 👉 로그아웃 처리나 리디렉션 등 추가 가능
+      localStorage.removeItem('jwt_token');
+      window.location.href = '/';  // 홈으로 이동
     }
     return Promise.reject(error);
   }

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import './Header.css';
 import { useGoogleLogin } from '@react-oauth/google';
 import axios from 'axios';
@@ -6,6 +6,26 @@ import { useUser } from '../contexts/UserContext';
 
 export default function Header() {
   const { user, setUser } = useUser();
+
+  // ✅ 페이지 새로고침 시 JWT 토큰으로 로그인 상태 유지
+  useEffect(() => {
+    const token = localStorage.getItem('jwt_token');
+    if (token) {
+      axios.get('http://localhost:5000/auth/me', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      .then(res => {
+        setUser(res.data);
+        console.log("🔄 토큰으로 로그인 유지");
+      })
+      .catch(err => {
+        console.warn("❌ 토큰 인증 실패 또는 만료:", err);
+        localStorage.removeItem('jwt_token');
+      });
+    }
+  }, [setUser]);
 
   // 로그인 로직
   const login = useGoogleLogin({
