@@ -1,18 +1,22 @@
 # 📂 로그인 기능 개발 (`login` 브랜치)
 
 ## 🔧 작업 개요
-React 프론트엔드와 Flask 백엔드 간 **Google OAuth 로그인 기능**을 연동하고, **사용자 정보를 MySQL DB에 저장**하는 기능을 구현했습니다.
+React 프론트엔드와 Flask 백엔드 간 **Google OAuth 로그인 기능**을 연동하고, **사용자 정보를 MySQL DB에 저장**한 뒤, **JWT 토큰을 발급**하여 로그인 세션을 유지하는 기능을 구현했습니다.
 
+---
 
 ## 🧩 주요 기능 요약
 
 - **React 프론트:**
-  - Google 로그인 버튼을 통해 사용자 인증
-  - 로그인 성공 시 Google 사용자 정보 획득 및 백엔드에 전달
+  - Google 로그인 버튼으로 사용자 인증
+  - 로그인 성공 시 Google 사용자 정보를 Flask 서버로 전송
+  - 받은 JWT 토큰을 로컬 스토리지에 저장하여 세션 유지
 
 - **Flask 백엔드:**
-  - Google 사용자 정보 수신 후 MySQL DB에 저장
-  - CORS 설정 및 JWT 토큰 발급 가능 구조 고려
+  - Google 사용자 정보를 받아 DB(`users` 테이블)에 저장 또는 조회
+  - 로그인 성공 시 **JWT 토큰 생성** 후 응답으로 전달
+  - 이후 요청 시 JWT를 검사하여 인증 처리
+  - CORS 설정 완료 (React 연동)
 
 - **MySQL DB 구조:**
 
@@ -30,6 +34,14 @@ React 프론트엔드와 Flask 백엔드 간 **Google OAuth 로그인 기능**�
 
 ---
 
+## 🔐 JWT 발급 구조
+
+- 사용자가 로그인하면 서버는 사용자 고유 식별자(예: `user_id`)를 기반으로 JWT를 생성
+- 생성된 JWT는 클라이언트로 전달되어 로컬에 저장됨
+- 이후 API 요청 시 `Authorization: Bearer <token>` 헤더를 통해 사용자 인증
+
+---
+
 ## ✅ 연동 테스트 방법
 
 1. Flask 서버 실행:  
@@ -44,7 +56,15 @@ React 프론트엔드와 Flask 백엔드 간 **Google OAuth 로그인 기능**�
    npm start
    ```
 
-3. 로그인 후 DB에 사용자 정보가 저장되었는지 확인:  
+3. 로그인 후 브라우저 개발자 도구에서 **JWT 토큰 확인**:  
+   - Application → LocalStorage → `token` 키 확인
+
+4. 서버 보호 라우터 테스트 (예시):
+   ```bash
+   curl -H "Authorization: Bearer <발급받은_JWT>" http://localhost:5000/protected
+   ```
+
+5. DB 저장 여부 확인:
    ```sql
    SELECT * FROM users;
    ```

@@ -11,17 +11,26 @@ export default function Header() {
   const login = useGoogleLogin({
     onSuccess: async tokenResponse => {
       try {
+        // 1단계: Google 사용자 정보 요청
         const res = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
           headers: {
             Authorization: `Bearer ${tokenResponse.access_token}`,
           },
         });
 
-        setUser(res.data); // Context에 사용자 정보 저장
+        const userInfo = res.data;
+        setUser(userInfo); // Context에 사용자 정보 저장
 
-        // ✅ Flask 백엔드로 사용자 정보 전송
-        await axios.post('http://localhost:5000/login', res.data);
-        console.log("✅ 백엔드에 사용자 정보 전송 완료");
+        // 2단계: 백엔드에 사용자 정보 전송 → JWT 발급
+        const jwtRes = await axios.post('http://localhost:5000/login', userInfo);
+
+        if (jwtRes.data && jwtRes.data.token) {
+          // 3단계: JWT 토큰 저장
+          localStorage.setItem('jwt_token', jwtRes.data.token);
+          console.log("✅ JWT 토큰 저장 완료");
+        } else {
+          console.warn("⚠️ JWT 토큰이 응답에 없습니다.");
+        }
 
       } catch (error) {
         console.error('❌ 사용자 정보 요청 또는 백엔드 전송 실패:', error);
@@ -32,7 +41,9 @@ export default function Header() {
 
   // 로그아웃 로직
   const logout = () => {
-    setUser(null); // Context에서 사용자 정보 제거
+    setUser(null);
+    localStorage.removeItem('jwt_token'); // 저장된 토큰 제거
+    console.log("🚪 로그아웃 완료");
   };
 
   return (
