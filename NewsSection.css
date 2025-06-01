@@ -1,0 +1,269 @@
+.news-section {
+  background-color: #ffffff;
+  padding: 20px;
+  border-radius: 15px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  height: 80vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.news-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.news-header h2 {
+  margin: 0;
+  color: #333;
+  font-size: 1.5rem;
+}
+
+.news-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+}
+
+
+.total-images {
+  font-size: 0.9rem;
+  color: #666;
+  font-weight: 500;
+}
+
+
+/* 메인 컨텐츠 영역 */
+.news-content-wrapper {
+  display: flex;
+  gap: 20px;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* 메인 뉴스 (왼쪽 큰 영역) */
+.main-news {
+  flex: 2;
+  min-height: 100%;
+}
+
+.main-news-image-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  cursor: pointer;
+}
+
+.main-news-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.no-image-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.main-news-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(transparent, rgba(0,0,0,0.8));
+  padding: 40px 30px 30px;
+  color: white;
+}
+
+.main-news-title {
+  font-size: 1.8rem;
+  font-weight: bold;
+  line-height: 1.3;
+  margin: 0 0 15px 0;
+  cursor: pointer;
+  transition: opacity 0.3s ease;
+}
+
+.main-news-title:hover {
+  opacity: 0.8;
+}
+
+.main-news-preview {
+  font-size: 1rem;
+  line-height: 1.5;
+  opacity: 0.9;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* 사이드 뉴스 리스트 (오른쪽 영역) */
+.side-news-list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  overflow-y: auto;
+}
+
+.side-news-item {
+  display: flex;
+  gap: 12px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  border: 1px solid #e9ecef;
+}
+
+.side-news-item:hover {
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  transform: translateY(-2px);
+}
+
+.side-news-image-container {
+  flex-shrink: 0;
+  width: 80px;
+  height: 80px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.side-news-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.side-no-image-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.side-news-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.side-news-title {
+  font-size: 0.95rem;
+  font-weight: bold;
+  color: #333;
+  line-height: 1.3;
+  margin: 0;
+  cursor: pointer;
+  transition: color 0.3s ease;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.side-news-title:hover {
+  color: #4caf50;
+}
+
+.side-news-preview {
+  font-size: 0.85rem;
+  color: #666;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.loading-message, .error-message, .no-news-message {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+  font-size: 1.1rem;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.error-message {
+  color: #f44336;
+  background-color: #ffebee;
+  border-radius: 10px;
+  border: 1px solid #ffcdd2;
+}
+
+.loading-message {
+  color: #2196f3;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 1024px) {
+  .news-content-wrapper {
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .main-news {
+    flex: none;
+    height: 300px;
+  }
+  
+  .side-news-list {
+    flex: none;
+    max-height: 400px;
+  }
+}
+
+@media (max-width: 768px) {
+  .news-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  
+  .main-news-title {
+    font-size: 1.4rem;
+  }
+  
+  .main-news-overlay {
+    padding: 20px 20px 20px;
+  }
+  
+  .side-news-item {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .side-news-image-container {
+    width: 100%;
+    height: 120px;
+  }
+  
+  .news-section {
+    height: auto;
+    max-height: 70vh;
+  }
+}
