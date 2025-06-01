@@ -7,6 +7,7 @@ import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 import re
+import html
 
 load_dotenv()
 
@@ -25,6 +26,7 @@ def extract_naver_news_text_and_date(link):
         # 본문 추출
         content_div = soup.select_one('article#dic_area')
         content = content_div.get_text(strip=True) if content_div else "본문 없음"
+        content = html.unescape(content)
 
         # 날짜 추출
         time_tag = soup.select_one('span._ARTICLE_DATE_TIME')
@@ -73,6 +75,7 @@ for keyword in search_keyword:
         for item in response_result.get('items', []):
             if 'news.naver.com' in item['link']:
                 title = re.sub('<.*?>', '', item['title'])
+                title = html.unescape(title)  
                 link = item['link']
                 content, date, image_url = extract_naver_news_text_and_date(link)
                 
@@ -113,6 +116,24 @@ latest_json_path = os.path.join(news_base_dir, 'latest.json')
 
 # 통계 정보 생성
 total_images = sum(1 for result in all_results if result.get('image_url'))
+
+# 뉴스 정렬 함수(이미지가 없는 경우 main news 에서 표시안 되도록 정렬)
+def sort_news_for_main(news_list):
+    def news_priority(news):
+        image_url = news.get('image_url', '')
+        
+        # 1순위: 이미지가 있고 ssl로 시작하지 않는 뉴스
+        if image_url and not image_url.startswith('https://ssl.'): # ssl 로 시작하는 경우 기사 본문에 이미지 없음.
+            return 0
+        # 2순위: 이미지가 없는 뉴스
+        elif not image_url:
+            return 1
+        # 3순위: ssl로 시작하는 이미지 뉴스
+        else:
+            return 2
+    
+    return sorted(news_list, key=news_priority)
+all_results = sort_news_for_main(all_results)
 
 # 저장할 데이터
 news_data = {
