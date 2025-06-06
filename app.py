@@ -10,6 +10,7 @@ import os
 from dotenv import load_dotenv
 from datetime import timedelta
 import time
+from gpt_analyzer import gpt_analyzer
 
 # ✅ 시스템 타임존을 Asia/Seoul로 설정
 os.environ['TZ'] = 'Asia/Seoul'
@@ -17,17 +18,18 @@ time.tzset()
 
 # 환경변수 로딩
 load_dotenv()
-SDS_SERVER_IP = "10.0.20.222"
-SDS_SERVER_PORT = "5000"
-JWT_SECRET = os.getenv("JWT_SECRET", "your-secret-key")
+SDS_SERVER_IP = os.getenv("SDS_SERVER_IP")
+SDS_SERVER_HOST = os.getenv("SDS_SERVER_IP")
+SDS_SERVER_PORT = os.getenv("SDS_SERVER_PORT")
+JWT_SECRET = os.getenv("JWT_SECRET", "your-secret-key")  # .env에 JWT_SECRET 추가 추천
 MYSQL_HOST = os.getenv("MYSQL_HOST", "localhost")
 MYSQL_PORT = int(os.getenv("MYSQL_PORT", 3306))
 MYSQL_USER = os.getenv("MYSQL_USER", "root")
 MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "010216")
 MYSQL_DB = os.getenv("MYSQL_DB", "myapp_db")
+CRAWLER_SERVER_HOST = os.getenv("CRAWLER_SERVER_HOST")
 
 print("✅ 서버 진입함")
-print(f"✅ SDS 서버: {SDS_SERVER_IP}:{SDS_SERVER_PORT}")
 
 # React build 경로 설정
 react_build_path = os.path.join(os.path.dirname(__file__), '../react/build')
@@ -37,16 +39,13 @@ app = Flask(__name__, static_folder=react_build_path, static_url_path='')
 CORS(app, origins=[
     "http://localhost:3000",
     "http://ddolddol2.duckdns.org",
-    "https://ddolddol2.duckdns.org"
+    "https://ddolddol2.duckdns.org"  # ✅ HTTPS 도메인도 반드시 포함
 ])
 
 # JWT 설정
 app.config["JWT_SECRET_KEY"] = JWT_SECRET
-app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=1)
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=1)  # ⏰ JWT 토큰 만료 시간 설정 (1시간)
 jwt = JWTManager(app)
-
-# SDS 서버 기본 URL
-SDS_BASE_URL = f"http://{SDS_SERVER_IP}:{SDS_SERVER_PORT}"
 
 # ⏳ 만료된 JWT에 대한 응답 처리
 @jwt.expired_token_loader
@@ -123,7 +122,7 @@ def login():
 
     access_token = create_access_token(
         identity=data['sub'],
-        expires_delta=timedelta(hours=1)
+        expires_delta=timedelta(hours=1)  # ⏰ 이 토큰은 1시간 뒤 만료
     )
     return jsonify({
         "status": "ok",
@@ -131,7 +130,7 @@ def login():
         "token": access_token
     }), 200
 
-# 🔹 로그인 유지 확인용 API
+# 🔹 [추가] 로그인 유지 확인용 API
 @app.route('/auth/me', methods=['GET'])
 @jwt_required()
 def get_current_user():
@@ -279,96 +278,142 @@ def get_favorite_stocks():
         conn.close()
     return jsonify(rows)
 
-# === SDS 서버 프록시 API (개선된 버전) ===
-
-# 🔹 SDS 서버 연결 테스트
-@app.route('/api/sds-test', methods=['GET'])
-def sds_test():
-    try:
-        response = requests.get(f"{SDS_BASE_URL}/test", timeout=5)
-        return jsonify({
-            "status": "ok",
-            "message": "✅ SDS 서버 연결 성공",
-            "sds_response": response.json() if response.headers.get('content-type', '').startswith('application/json') else response.text
-        }), 200
-    except Exception as e:
-        print("❌ SDS 서버 연결 실패:", e)
-        return jsonify({
-            "status": "error",
-            "message": "SDS 서버 연결 실패",
-            "error": str(e)
-        }), 500
-
-# 기본 헬로 API
+# 기본 라우트 및 정적 리소스
 @app.route('/api/hello')
 def hello():
     return jsonify({'message': 'Hello from Flask in backend folder!'})
 
-# === React 관련 라우트 ===
 @app.route('/')
 def serve_react():
     return send_from_directory(app.static_folder, 'index.html')
+
+@app.route('/api/<path:path>', methods=['GET', 'POST'])
+def proxy(path):
+    url = f"http://{SDS_SERVER_IP}:{SDS_SERVER_PORT}/{path}"
+    if request.method == "GET":
+        resp = requests.get(url, params=request.args)
+    else:
+        resp = requests.post(url, json=request.get_json())
+    return Response(
+        resp.content,
+        status=resp.status_code,
+        content_type=resp.headers.get("Content-Type", "application/json")
+    )
 
 @app.errorhandler(404)
 def not_found(e):
     return send_from_directory(app.static_folder, 'index.html')
 
-# === 범용 SDS 프록시 (기존 코드 개선) ===
-@app.route('/api/<path:path>', methods=['GET', 'POST', 'PUT', 'DELETE'])
-def proxy(path):
-    """
-    React에서 /api/* 요청을 SDS 서버로 프록시
-    """
+
+# anal
+def get_stock_history(country, ticker, days=90):
     try:
-        url = f"{SDS_BASE_URL}/{path}"
-        print(f"🔄 프록시 요청: {request.method} {url}")
-        
-        # 요청 메서드에 따라 처리
-        if request.method == "GET":
-            resp = requests.get(url, params=request.args, timeout=10)
-        elif request.method == "POST":
-            resp = requests.post(url, 
-                               json=request.get_json() if request.is_json else None,
-                               data=request.form if not request.is_json else None,
-                               timeout=10)
-        elif request.method == "PUT":
-            resp = requests.put(url, 
-                              json=request.get_json() if request.is_json else None,
-                              timeout=10)
-        elif request.method == "DELETE":
-            resp = requests.delete(url, timeout=10)
-        
-        print(f"✅ SDS 응답: {resp.status_code}")
-        
-        # 응답 반환
-        return Response(
-            resp.content,
-            status=resp.status_code,
-            content_type=resp.headers.get("Content-Type", "application/json")
-        )
-        
-    except requests.exceptions.Timeout:
-        print("❌ SDS 서버 타임아웃")
-        return jsonify({
-            "status": "error",
-            "message": "SDS 서버 응답 시간 초과"
-        }), 504
-    except requests.exceptions.ConnectionError:
-        print("❌ SDS 서버 연결 실패")
-        return jsonify({
-            "status": "error", 
-            "message": "SDS 서버에 연결할 수 없습니다"
-        }), 503
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=days)
+
+        from_date = start_date.strftime('%Y%m%d')
+        to_date = end_date.strftime('%Y%m%d')
+
+        url = f"http://{SDS_SERVER_IP}/{country}/{ticker}/{from_date}/{to_date}"
+        print(f"주가 히스토리 요청: {url}")
+
+        response = requests.get(url, timeout=15)
+        if response.status_code == 200:
+            data = response.json()
+            print(f"주가 데이터 {len(data)}개 수신")
+            return data
+        else:
+            print(f"주가 데이터 요청 실패: {response.status_code}")
+            return []
     except Exception as e:
-        print(f"❌ 프록시 오류: {e}")
+        print(f"주가 히스토리 가져오기 실패: {e}")
+        return []
+
+def get_news_data(ticker):
+    try:
+        url = f"{CRAWLER_SERVER_HOST}/crawler/{ticker}"
+        print(f"뉴스 요청: {url}")
+
+        news_response = requests.get(url, timeout=30)
+        if news_response.status_code != 200:
+            print(f"뉴스 크롤링 요청 실패: {news_response.status_code}")
+            return []
+
+        news_data = news_response.json()
+        if not isinstance(news_data, dict) or 'success' not in news_data:
+            print("뉴스 데이터 형식 오류")
+            return []
+
+        news_summaries = []
+        for i, news_url in enumerate(news_data['success'][:5], 1):
+            try:
+                print(f"뉴스 {i}/5 요약 가져오는 중...")
+                summary_response = requests.get(news_url, timeout=20)
+                if summary_response.status_code == 200:
+                    summary_data = summary_response.json()
+                    news_summaries.append({
+                        'title': summary_data.get('title', ''),
+                        'summary': summary_data.get('summary', ''),
+                        'date': summary_data.get('date', '')
+                    })
+                    print(f"뉴스 {i} 수신 완료")
+                else:
+                    print(f"뉴스 {i} 요약 실패: {summary_response.status_code}")
+            except Exception as e:
+                print(f"뉴스 {i} 처리 오류: {e}")
+                continue
+
+        print(f"총 {len(news_summaries)}개 뉴스 수집 완료")
+        return news_summaries
+
+    except Exception as e:
+        print(f"뉴스 데이터 가져오기 실패: {e}")
+        return []
+
+
+@app.route('/api/analyze/<string:country>/<string:ticker>', methods=['GET'])
+def analyze_stock(country, ticker):
+    try:
+        if not gpt_analyzer:
+            return jsonify({
+                "status": "error",
+                "message": "GPT 분석기가 초기화되지 않았습니다."
+            }), 500
+
+        print(f"{country}/{ticker} 분석 시작")
+
+        price_history = get_stock_history(country, ticker, days=90)
+        news_data = get_news_data(ticker)
+
+        stock_data = {
+            "stock_code": ticker,
+            "country": country.upper(),
+            "price_history": price_history,
+            "news": news_data
+        }
+
+        print(f"데이터 수집 완료: 주가 {len(price_history)}일, 뉴스 {len(news_data)}개")
+
+        print("GPT 분석 시작...")
+        result = gpt_analyzer.analyze_stock(stock_data)
+
+        if result['status'] == 'success':
+            print(f"GPT 분석 완료 - 토큰 사용: {result.get('token_usage', 0)}")
+        else:
+            print(f"GPT 분석 실패: {result.get('message')}")
+
+        return jsonify(result), 200
+
+    except Exception as e:
+        print(f"분석 오류: {e}")
         return jsonify({
             "status": "error",
-            "message": "프록시 처리 중 오류 발생",
-            "error": str(e)
+            "message": f"분석 중 오류가 발생했습니다: {str(e)}"
         }), 500
+
+
 
 # ✅ HTTPS로 Flask 실행
 if __name__ == '__main__':
     print("✅ Flask 실행 직전")
-    print(f"✅ SDS 서버 URL: {SDS_BASE_URL}")
     app.run(host='0.0.0.0', port=443, ssl_context=('cert.pem', 'privkey.pem'))
