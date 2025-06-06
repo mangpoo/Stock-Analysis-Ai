@@ -119,6 +119,7 @@ class Searcher:
         df = pd.DataFrame(table_results)
         df.columns = ['ticker', 'stock_name', 'market_capitalization']
         
+        df.drop_duplicates(['ticker'], inplace = True)
         df.sort_values(by = ["market_capitalization"], axis = 0, ascending=False, inplace=True)
         df.reset_index(inplace=True)
         df.drop("index", axis = 1, inplace=True)
