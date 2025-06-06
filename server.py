@@ -21,6 +21,8 @@ dtObj = dt.datetime.now()
 
 cache_dct = None
 
+chrate_cache = {"kr":None, "us":None}
+
 HOST = ip # server ip
 CACHE_FILE = f"{dtObj.year}{dtObj.month}{dtObj.day}.p"
 
@@ -180,33 +182,37 @@ def get_change_rate(country, ticker):
 
 @app.route("/get_ch_all/<string:country>", methods = {"GET"})
 def get_change_rate_all(country):
-    base = "http://127.0.0.1:5000"
-    # 1. 시가총액 상위 120개 종목 정보 요청
-    recommend_url = f"{base}/recommend/{country}"
-    res = requests.get(recommend_url)
-    res.raise_for_status()
-    stocks = res.json()
-
-    # 2. 상위 110개 종목만 추출
-    results = []
-    for stock in stocks:
-        ticker = stock.get('ticker') or stock.get('symbol')  # 필드명은 서버 구현에 따라 다를 수 있음
-        if not ticker:
-            continue
-        changerate_url = f"{base}/changerate/{country}/{ticker}"
-        try:
-            resp = requests.get(changerate_url)
-            resp.raise_for_status()
-            changerate_data = resp.json()
-        except Exception as e:
-            changerate_data = {"error": str(e)}
-        # 결과 저장
-        results.append({
-            "ticker": ticker,
-            "changerate": changerate_data
-        })
+    if(chrate_cache[country] != None):
+        return jsonify(chrate_cache[country])
     
-    return jsonify(results)
+    else:
+        base = "http://127.0.0.1:5000"
+        # 1. 시가총액 상위 120개 종목 정보 요청
+        recommend_url = f"{base}/recommend/{country}"
+        res = requests.get(recommend_url)
+        res.raise_for_status()
+        stocks = res.json()
+
+        # 2. 상위 110개 종목만 추출
+        results = []
+        for stock in stocks:
+            ticker = stock.get('ticker') or stock.get('symbol')  # 필드명은 서버 구현에 따라 다를 수 있음
+            if not ticker:
+                continue
+            changerate_url = f"{base}/changerate/{country}/{ticker}"
+            try:
+                resp = requests.get(changerate_url)
+                resp.raise_for_status()
+                changerate_data = resp.json()
+            except Exception as e:
+                changerate_data = {"error": str(e)}
+            # 결과 저장
+            results.append({
+                "ticker": ticker,
+                "changerate": changerate_data
+            })
+        chrate_cache[country] = results
+        return jsonify(results)
 
 
 
