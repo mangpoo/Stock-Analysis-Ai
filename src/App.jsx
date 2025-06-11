@@ -6,13 +6,9 @@ import AppLayout from './components/AppLayout'; // AppLayout을 최상위에서 
 import ChartPage from './pages/Chart';
 import { UserProvider } from './contexts/UserContext'; // UserProvider 임포트
 
-
-// 사용자의 Google Client ID
-const GOOGLE_CLIENT_ID = "111472891391-00f7gch3d72blm7gujt008ecuvgds5qr.apps.googleusercontent.com";
-
 function App() {
   return (
-    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+    <UserProvider>
       <Router>
         <AppLayout> {/* AppLayout이 모든 페이지를 감싸도록 설정 */}
           <Routes>
@@ -23,7 +19,7 @@ function App() {
           </Routes>
         </AppLayout>
       </Router>
-    </GoogleOAuthProvider>
+    </UserProvider>
   );
 }
 
