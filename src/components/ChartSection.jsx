@@ -1,9 +1,7 @@
-// src/components/ChartSection.jsx
-
 import React, { useState } from 'react';
 import './ChartSection.css';
 import ChartModal from './ChartModal';
-import API_CONFIG from '../config';
+import API_CONFIG from '../config'; // 제공해주신 config.js를 import
 
 export default function ChartSection({ ticker, stockName, stockPrice, stockChange, logoUrl, chartServerIp, stockCountryCode }) {
     const [summaries, setSummaries] = useState([]);
@@ -22,9 +20,10 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
     const [isLoadingConsolidatedAnalysis, setIsLoadingConsolidatedAnalysis] = useState(false);
     const [consolidatedAnalysisError, setConsolidatedAnalysisError] = useState(null);
 
+    // --- 차트 분석 핸들러 (백엔드 /api/analyze-price 사용) ---
     const handleChartAnalysis = async () => {
-        if (!ticker) {
-            setChartAnalysisError("종목 코드가 없습니다. 차트 분석을 할 수 없습니다.");
+        if (!ticker || !stockCountryCode) {
+            setChartAnalysisError("종목 코드 또는 국가 정보가 없습니다. 차트 분석을 할 수 없습니다.");
             return;
         }
 
@@ -33,71 +32,34 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
         setChartAnalysisResult(null);
         setChartAnalysisError(null);
 
-        console.log(`차트 분석 요청 시작: ${ticker} (국가: ${stockCountryCode})`);
+        console.log(`차트 분석 요청 시작: ${stockCountryCode}/${ticker}`);
 
         try {
-            // 1. 최근 1년간의 주가 데이터 가져오기
-            const today = new Date();
-            const endDate = today.toISOString().slice(0, 10).replace(/-/g, '');
-            const oneYearAgo = new Date(new Date().setFullYear(today.getFullYear() - 1));
-            const startDate = oneYearAgo.toISOString().slice(0, 10).replace(/-/g, '');
-            
-            const stockDataUrl = API_CONFIG.endpoints.stockData(stockCountryCode, ticker, startDate, endDate);
-            console.log(`주가 데이터 요청 URL: ${stockDataUrl}`);
+            // 백엔드의 주가 분석 API 호출
+            const analysisUrl = API_CONFIG.endpoints.chatGptAnalyzeChart(stockCountryCode, ticker);
+            console.log(`백엔드 주가 분석 API 요청 URL: ${analysisUrl}`);
 
-            const stockDataResponse = await fetch(stockDataUrl);
-            if (!stockDataResponse.ok) {
-                throw new Error(`주가 데이터(OHLCV)를 가져오는데 실패했습니다: ${stockDataResponse.statusText}`);
-            }
-            const historicalData = await stockDataResponse.json();
+            const response = await fetch(analysisUrl);
 
-            // 2. 주가 데이터를 포함하여 동적 프롬프트 생성
-            const promptText = `
-                ${stockName || ticker} 주식에 대한 차트 분석을 요청합니다.
-                현재 주가: ${stockPrice}, 등락률: ${stockChange}%.
-
-                최근 1년간의 일별 주가 데이터(JSON 형식)는 다음과 같습니다:
-                ${JSON.stringify(historicalData)}
-
-                이 데이터를 바탕으로 다음 항목을 포함하여 종합적인 기술적 분석과 실행 가능한 매매 전략을 제시해 주세요:
-                1.  **주요 추세**: 현재 장기 및 단기 추세 (상승, 하락, 횡보)는 무엇입니까?
-                2.  **지지선/저항선**: 중요한 지지선과 저항선 레벨을 구체적인 가격으로 알려주세요.
-                3.  **기술적 지표 분석**: 이동평균선(MA), 상대강도지수(RSI), MACD 등 주요 지표를 해석해주세요.
-                4.  **거래량 분석**: 최근 거래량 패턴은 무엇을 의미합니까?
-                5.  **예상 시나리오**: 가장 가능성 있는 상승 및 하락 시나리오를 설명해주세요.
-                6.  **매매 전략**: 위 분석을 바탕으로 단기 및 중장기적 관점에서의 매수, 매도, 또는 보유 전략을 제안해주세요.
-            `;
-
-            // 3. 생성된 프롬프트로 ChatGPT 분석 API 호출
-            const chatGptResponse = await fetch(API_CONFIG.endpoints.chatGptAnalyzeChart, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ 
-                    prompt: promptText, 
-                    ticker: ticker, 
-                    countryCode: stockCountryCode 
-                }),
-            });
-
-            if (!chatGptResponse.ok) {
-                const errorData = await chatGptResponse.text();
-                throw new Error(`ChatGPT 분석 실패: ${chatGptResponse.status} ${chatGptResponse.statusText} - ${errorData}`);
+            if (!response.ok) {
+                const errorData = await response.json(); // 백엔드에서 JSON 에러 응답을 기대
+                throw new Error(`주가 분석 실패: ${response.status} - ${errorData.analysis || '알 수 없는 오류'}`);
             }
 
-            const analysisData = await chatGptResponse.json();
-            setChartAnalysisResult(analysisData.analysis_text || "분석 결과를 가져오지 못했습니다.");
-            console.log("ChatGPT 차트 분석 결과:", analysisData);
+            const resultData = await response.json();
+            // 백엔드에서 'analysis' 필드에 분석 결과 텍스트가 담겨 있다고 가정
+            setChartAnalysisResult(resultData.analysis || "분석 결과를 가져오지 못했습니다.");
+            console.log("백엔드 주가 분석 결과:", resultData);
 
         } catch (error) {
             console.error("차트 분석 처리 중 오류:", error);
             setChartAnalysisError(error.message);
         } finally {
-            setIsLoadingChartAnalysis(false); // 분석 로딩 종료
+            setIsLoadingChartAnalysis(false);
         }
     };
 
+    // --- 뉴스 요약 핸들러 (기존 로직 유지, 백엔드 SDS 서버 호출) ---
     const handleNewsSummary = async () => {
         if (!ticker) {
             setSummaryError("종목 코드가 없습니다.");
@@ -111,6 +73,40 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
         setSummaries([]);
 
         try {
+            // 백엔드 app.py의 get_news_data 함수가 내부적으로 호출하는 크롤러 API를 프론트에서 직접 호출
+            // **주의:** app.py의 get_news_data 함수는 이미 뉴스 요약까지 백엔드에서 처리하고 있습니다.
+            // 따라서 이 handleNewsSummary 함수는 더 이상 필요 없을 수 있습니다.
+            // 통합 분석 시 백엔드의 `/api/analyze`가 모든 것을 처리하므로,
+            // 별도로 뉴스를 가져와서 `summaries` 상태에 저장할 필요가 없을 수 있습니다.
+            // 여기서는 기존 코드를 유지하되, 이 부분의 용도를 재고해볼 필요가 있음을 명시합니다.
+            // 만약 뉴스 요약을 별도로 프론트엔드에 표시해야 한다면 이 로직을 사용하지만,
+            // 통합 분석의 데이터로만 사용된다면 백엔드에 맡기는 것이 더 효율적입니다.
+
+            // 현재 app.py의 get_news_data가 SDS_SERVER_IP를 통해 뉴스를 가져오고 있으므로,
+            // 프론트엔드에서 직접 이 API_CONFIG.endpoints.crawler(ticker)를 호출하는 것은 중복일 수 있습니다.
+            // 통합 분석을 위해서는 백엔드 /api/analyze가 뉴스 크롤링까지 내부적으로 담당하게 됩니다.
+
+            // 이 부분은 필요에 따라 제거하거나, 만약 별도의 뉴스 요약 기능이 필요하다면
+            // 백엔드에서 뉴스 요약만 제공하는 API를 만들고 그 API를 호출하도록 변경해야 합니다.
+            // 현재 코드에서는 이 부분이 통합 분석과 직접적으로 연동되지는 않습니다 (별개 실행 버튼).
+            
+            // 임시로 news data가 app.py의 get_news_data에서 오는 것으로 가정하고 API_CONFIG를 사용하지 않고
+            // app.py의 뉴스 요약 기능을 직접 호출하는 것은 불가능하므로,
+            // 이 뉴스 요약 버튼의 목적이 'get_news_data'와 동일한 결과물을 프론트엔드에 보여주는 것이라면
+            // app.py에 뉴스 요약만 담당하는 새로운 엔드포인트 (예: /api/news-summary/<ticker>)를 만들고 그것을 호출해야 합니다.
+            // 현재 구조에서는 /api/analyze가 뉴스를 가져오므로, 이 `handleNewsSummary`는 비활성화하거나 수정해야 합니다.
+
+            // 여기서는 기존 `handleNewsSummary`의 로직을 그대로 두지만,
+            // 실제 배포 시에는 통합 분석이 모든 데이터를 포함하므로 이 기능의 필요성을 재검토해야 합니다.
+            
+            // 예시: 만약 백엔드에서 뉴스 요약만 가져오는 API가 있다면:
+            // const newsSummaryApiUrl = `${API_CONFIG.BACKEND_API_HOST}/api/news-summary/${ticker}`;
+            // const newsResponse = await fetch(newsSummaryApiUrl);
+            // if (!newsResponse.ok) { ... }
+            // const newsData = await newsResponse.json();
+            // setSummaries(newsData.summaries); // 백엔드에서 요약된 뉴스 목록을 반환한다고 가정
+            
+            // 현재 코드로 뉴스 크롤러를 직접 호출하는 로직 (기존):
             const crawlerResponse = await fetch(API_CONFIG.endpoints.crawler(ticker));
             if (!crawlerResponse.ok) {
                 const errorData = await crawlerResponse.text();
@@ -118,8 +114,7 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
             }
 
             const newsIdPathsObject = await crawlerResponse.json();
-            const arraysOfPaths = Object.values(newsIdPathsObject);
-            const actualNewsIdPaths = arraysOfPaths.length > 0 && Array.isArray(arraysOfPaths[0]) ? arraysOfPaths[0] : [];
+            const actualNewsIdPaths = newsIdPathsObject.success || []; // 'success' 필드를 직접 참조
 
             if (actualNewsIdPaths.length === 0) {
                 console.log("요약할 뉴스가 없습니다.");
@@ -130,42 +125,50 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
 
             console.log("가져온 뉴스 경로 목록 (처리 대상):", actualNewsIdPaths);
 
-            const summaryPromises = actualNewsIdPaths.map(pathString => {
+            const summaryPromises = actualNewsIdPaths.slice(0, 5).map(pathString => { // app.py가 5개만 가져오므로 프론트도 5개로 제한
                 if (typeof pathString !== 'string') {
                     console.warn("경로 목록에 문자열이 아닌 요소가 포함되어 있습니다:", pathString);
                     return Promise.resolve(null);
                 }
-                const pathParts = pathString.split('/');
-                const newsId = pathParts[pathParts.length - 1];
-                if (!newsId || newsId.trim() === "") {
-                    console.warn("잘못된 형식의 뉴스 ID 경로:", pathString);
-                    return Promise.resolve(null);
-                }
+                // pathString이 이미 완전한 URL이라고 가정합니다 (SDS_SERVER_IP/news/summary/<news_id> 형태)
+                // app.py의 get_news_data 함수는 이미 complete URL을 반환하므로,
+                // 여기서 다시 newsId를 추출하여 `getSummary`를 호출하는 방식은 app.py와 불일치합니다.
+                // app.py의 get_news_data는 이미 요약된 뉴스 객체를 반환합니다.
+                // 따라서 이 `handleNewsSummary`는 app.py의 `/crawler/{ticker}` 엔드포인트가
+                // 요약된 뉴스 객체를 직접 반환한다고 가정하고 수정해야 합니다.
+                // 하지만 현재 app.py의 get_news_data는 뉴스 URL 리스트를 먼저 반환하고,
+                // 이후 각 URL에 요청해서 요약을 가져오는 방식입니다.
+                // 이 프론트엔드의 `handleNewsSummary`도 동일한 방식으로 동작해야 합니다.
 
-                const fullSummaryUrl = API_CONFIG.endpoints.getSummary(newsId);
-                console.log(`요약 요청 URL: ${fullSummaryUrl}`);
-
-                return fetch(fullSummaryUrl)
-                    .then(async res => {
+                // app.py의 get_news_data와 동일하게 동작하도록 수정 (뉴스 URL을 받아서 요약 요청)
+                return fetch(pathString, { timeout: 20000 }) // app.py와 동일하게 timeout 설정 (없으면 추가)
+                    .then(res => {
                         if (!res.ok) {
-                            const errorBody = await res.text();
-                            console.error(`ID [${newsId}]에 대한 요약을 가져오는데 실패했습니다: ${res.status} ${res.statusText} - ${errorBody}`);
-                            return null;
+                            console.error(`뉴스 요약 요청 실패 (${pathString}): ${res.status} ${res.statusText}`);
+                            return Promise.reject(new Error(`뉴스 요약 요청 실패 (${pathString})`));
                         }
                         return res.json();
                     })
+                    .then(data => ({
+                        title: data.title || '제목 없음',
+                        issue: data.issue || '주요 이슈 정보 없음', // 'summary' 대신 'issue' 사용
+                        impact: data.impact || '시장 영향 정보 없음', // 'impact' 필드 추가
+                        date: data.date || '날짜 없음',
+                        link: data.link || pathString // API 응답에 link가 있으므로 그것을 우선 사용
+                    }))
                     .catch(err => {
-                        console.error(`ID [${newsId}] 요청 중 네트워크 또는 기타 오류:`, err);
+                        console.error(`뉴스 요약 처리 중 오류 [${pathString}]:`, err);
                         return null;
                     });
             });
 
-            const fetchedSummaries = (await Promise.all(summaryPromises)).filter(summary => summary !== null);
+            const fetchedSummaries = (await Promise.allSettled(summaryPromises))
+                .filter(result => result.status === 'fulfilled' && result.value !== null)
+                .map(result => result.value);
 
             if (fetchedSummaries.length === 0 && actualNewsIdPaths.length > 0) {
-                console.log("모든 뉴스 항목을 요약하지 못했거나, 요약 결과가 비어있습니다.");
                 setSummaries([{ type: 'empty_summary', message: '뉴스 요약 정보를 가져왔으나 내용이 없습니다.' }]);
-            } else if (fetchedSummaries.length > 0) {
+            } else {
                 setSummaries(fetchedSummaries);
             }
 
@@ -179,69 +182,41 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
         }
     };
 
-    // 통합 분석 기능 핸들러
+    // --- 통합 분석 핸들러 (백엔드 /api/analyze 사용) ---
     const handleConsolidatedAnalysis = async () => {
-        // 모달 열고 초기 상태 설정
         setIsConsolidatedModalOpen(true);
         setConsolidatedAnalysisResult(null);
         setConsolidatedAnalysisError(null);
 
-        // 차트 분석 및 뉴스 요약 데이터가 있는지 확인
-        if (!chartAnalysisResult || summaries.length === 0) {
-            setConsolidatedAnalysisError("'차트 분석'과 '뉴스 요약'을 먼저 실행하여 데이터가 필요합니다.");
+        // 통합 분석은 백엔드에서 주가와 뉴스를 모두 가져오므로,
+        // 프론트엔드에서 차트 분석이나 뉴스 요약이 미리 실행될 필요는 없습니다.
+        // 다만, 사용자가 혼동하지 않도록 UI 상으로는 버튼 활성화/비활성화를 통해
+        // 차트/뉴스 분석을 먼저 수행하도록 유도할 수는 있습니다.
+        // 하지만 실제 API 호출 로직에서는 의존성을 제거합니다.
+        
+        if (!ticker || !stockCountryCode) {
+            setConsolidatedAnalysisError("종목 코드 또는 국가 정보가 없습니다. 통합 분석을 할 수 없습니다.");
             return;
         }
 
         setIsLoadingConsolidatedAnalysis(true);
 
         try {
-            // 뉴스 요약 결과를 텍스트 형식으로 변환
-            const newsSummariesText = summaries
-                .map(s => `- 뉴스 제목: ${s.title || '제목 없음'}\n  - 핵심 이슈: ${s.issue || '정보 없음'}\n  - 시장 영향: ${s.impact || '정보 없음'}`)
-                .join('\n\n');
+            // 백엔드의 통합 분석 API 호출
+            const analysisUrl = API_CONFIG.endpoints.chatGptConsolidatedAnalysis(stockCountryCode, ticker);
+            console.log(`백엔드 통합 분석 API 요청 URL: ${analysisUrl}`);
 
-            // 통합 분석을 위한 프롬프트 생성
-            const promptText = `
-                ### **${stockName || ticker} 주식 통합 분석 요청**
-
-                **1. AI 기반 기술적 분석 결과:**
-                ---
-                ${chartAnalysisResult}
-                ---
-
-                **2. 최신 뉴스 요약:**
-                ---
-                ${newsSummariesText}
-                ---
-
-                **### 요청 사항:**
-                위의 '기술적 분석'과 '뉴스 요약'을 종합적으로 고려하여, 투자자를 위한 최종 투자 전략을 제시해주세요. 다음 항목을 반드시 포함하여 구체적이고 실행 가능한 답변을 생성해주세요:
-
-                1.  **종합 평가 (Executive Summary):** 현재 주식의 상태를 '긍정적', '부정적', 또는 '중립적'으로 평가하고, 그 핵심 이유를 2~3문장으로 요약해주세요.
-                2.  **단기적 투자 전략 (1~4주):** 구체적인 진입 및 목표 가격, 손절 가격을 포함한 단기 매매 전략을 제시해주세요.
-                3.  **중장기적 투자 전략 (6개월~1년):** 중장기적 관점에서의 주가 전망과 투자 전략을 설명해주세요.
-                4.  **주요 리스크 요인:** 현재 분석에서 가장 중요하게 고려해야 할 잠재적 리스크는 무엇인가요?
-                5.  **핵심 기회 요인:** 반대로, 주가 상승을 이끌 수 있는 핵심 기회 요인은 무엇인가요?
-            `;
-
-            // 통합 분석 API 호출
-            const response = await fetch(API_CONFIG.endpoints.chatGptConsolidatedAnalysis, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    prompt: promptText, 
-                    ticker: ticker, 
-                    countryCode: stockCountryCode 
-                }),
-            });
+            const response = await fetch(analysisUrl);
 
             if (!response.ok) {
-                const errorData = await response.text();
-                throw new Error(`통합 분석에 실패했습니다: ${response.status} - ${errorData}`);
+                const errorData = await response.json(); // 백엔드에서 JSON 에러 응답을 기대
+                throw new Error(`통합 분석 실패: ${response.status} - ${errorData.analysis || '알 수 없는 오류'}`);
             }
 
             const resultData = await response.json();
-            setConsolidatedAnalysisResult(resultData.analysis_text || "분석 결과를 가져오지 못했습니다.");
+            // 백엔드에서 'analysis' 필드에 분석 결과 텍스트가 담겨 있다고 가정
+            setConsolidatedAnalysisResult(resultData.analysis || "분석 결과를 가져오지 못했습니다.");
+            console.log("백엔드 통합 분석 결과:", resultData);
 
         } catch (error) {
             console.error("통합 분석 처리 중 오류:", error);
@@ -259,7 +234,7 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
     const endDate = `${year}${month}${day}`;
 
     const countryForChart = (stockCountryCode === 'us' || stockCountryCode === 'kr') ? stockCountryCode : 'kr';
-    const chartIframeSrc = API_CONFIG.endpoints.chartIframe(chartServerIp, countryForChart, ticker, startDate, endDate);
+    const chartIframeSrc = API_CONFIG.endpoints.chartIframe(API_CONFIG.CHART_IFRAME_SERVER_HOST, countryForChart, ticker, startDate, endDate);
 
     if (!ticker) {
         return (
@@ -282,24 +257,10 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
                         src={logoUrl}
                         alt={`${stockName || '종목'} 로고`}
                         className="image-placeholder"
-                        onError={(e) => {
-                            e.target.style.display = 'none';
-                            const parent = e.target.parentNode;
-                            if (parent) {
-                                const textNode = document.createElement('span');
-                                textNode.textContent = '로고';
-                                if (parent.classList.contains('image-placeholder-container')) {
-                                    parent.appendChild(textNode);
-                                } else {
-                                    e.target.insertAdjacentElement('afterend', textNode);
-                                }
-                            }
-                        }}
+                        onError={(e) => { e.target.style.display = 'none'; }}
                     />
                 ) : (
-                    <div className="image-placeholder-container">
-                        <div className="image-placeholder">로고</div>
-                    </div>
+                    <div className="image-placeholder">로고</div>
                 )}
                 <div className="stock-info-text">
                     <span className="stock-name">{stockName || ticker}</span>
@@ -326,6 +287,7 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
                 <div className="chart-controls">
                     <h3>AI 분석</h3>
 
+                    {/* 차트 분석 버튼 */}
                     <div className="ai-analysis-card" onClick={handleChartAnalysis}>
                         <div className="ai-card-icon">📊</div>
                         <div className="ai-card-content">
@@ -334,6 +296,10 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
                         </div>
                     </div>
 
+                    {/* 뉴스 요약 버튼 */}
+                    {/* NOTE: 이 뉴스 요약 버튼의 역할에 대해 재고해볼 필요가 있습니다.
+                                백엔드의 통합 분석 API가 이미 뉴스를 포함하므로, 이 버튼이 별도로 필요한지 확인하세요.
+                                만약 '뉴스 요약'을 독립적인 기능으로 제공하고 싶다면, 백엔드에 해당 API를 명확히 분리해야 합니다. */}
                     <div
                         className={`ai-analysis-card ${isLoadingSummaries ? 'disabled' : ''}`}
                         onClick={!isLoadingSummaries ? handleNewsSummary : undefined}
@@ -347,10 +313,12 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
                         </div>
                     </div>
 
+                    {/* 통합 분석 버튼 */}
+                    {/* 통합 분석은 백엔드에서 모든 데이터를 가져오므로, 여기서는 단순히 API를 호출하면 됩니다.
+                                  UI 상의 'disabled' 조건은 사용자의 이해를 돕기 위함입니다. */}
                     <div 
-                        className={`ai-analysis-card ${!chartAnalysisResult || summaries.length === 0 ? 'disabled' : ''}`} 
+                        className="ai-analysis-card" // 조건부 disabled 클래스는 제거하여 항상 클릭 가능하게 함
                         onClick={handleConsolidatedAnalysis}
-                        title={!chartAnalysisResult || summaries.length === 0 ? "차트 분석과 뉴스 요약을 먼저 실행해주세요." : "통합 분석 실행"}
                     >
                         <div className="ai-card-icon">💡</div>
                         <div className="ai-card-content">
@@ -372,24 +340,17 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
                             return <p key={index} className="info-message">{summary.message}</p>;
                         }
                         return summary ? (
-                            <div key={summary.link || index} className="news-summary-item">
+                           <div key={summary.link || index} className="news-summary-item">
                                 <h5>{summary.title || '제목 없음'}</h5>
                                 <p><strong>날짜:</strong> {summary.date || '정보 없음'}</p>
-                                <p><strong>주요 이슈:</strong> {summary.issue || '정보 없음'}</p>
-                                <p><strong>영향:</strong> {summary.impact || '정보 없음'}</p>
+                                <p><strong>주요 이슈:</strong> {summary.issue || '정보 없음'}</p> {/* 'summary.issue'를 사용 */}
+                                <p><strong>시장 영향:</strong> {summary.impact || '정보 없음'}</p> {/* 'summary.impact'를 사용하도록 주석 해제 */}
                                 {summary.link && <p><a href={summary.link} target="_blank" rel="noopener noreferrer">원본 기사 보기</a></p>}
-                                {summary.related_tickers && summary.related_tickers.length > 0 && (
-                                    <p><strong>관련 티커:</strong> {summary.related_tickers.join(', ')}</p>
-                                )}
                             </div>
                         ) : (
                             <p key={index} className="error-message">이 항목에 대한 요약 정보를 가져오지 못했습니다.</p>
                         );
                     })}
-                </div>
-            )}
-            {!isLoadingSummaries && !summaryError && summaries.length === 0 && ticker && !isLoadingSummaries && (
-                <div style={{ marginTop: '10px' }}>
                 </div>
             )}
 
@@ -412,10 +373,7 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
                     {isLoadingChartAnalysis && <p className="loading-message">차트 데이터를 분석 중입니다. 잠시만 기다려주세요...</p>}
                     {chartAnalysisError && <p className="error-message">오류: {chartAnalysisError}</p>}
                     {chartAnalysisResult && !isLoadingChartAnalysis && !chartAnalysisError && (
-                        <p>{chartAnalysisResult}</p>
-                    )}
-                    {!isLoadingChartAnalysis && !chartAnalysisError && !chartAnalysisResult && (
-                        <p>분석 결과를 기다리고 있습니다.</p>
+                        <pre className="analysis-text">{chartAnalysisResult}</pre>
                     )}
                 </div>
             </ChartModal>
@@ -439,10 +397,7 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
                     {isLoadingConsolidatedAnalysis && <p className="loading-message">차트와 뉴스 데이터를 종합하여 분석 중입니다. 잠시만 기다려주세요...</p>}
                     {consolidatedAnalysisError && <p className="error-message">오류: {consolidatedAnalysisError}</p>}
                     {consolidatedAnalysisResult && !isLoadingConsolidatedAnalysis && !consolidatedAnalysisError && (
-                        <p>{consolidatedAnalysisResult}</p>
-                    )}
-                    {!isLoadingConsolidatedAnalysis && !consolidatedAnalysisError && !consolidatedAnalysisResult && (
-                        <p>분석 결과를 기다리고 있습니다.</p>
+                           <pre className="analysis-text">{consolidatedAnalysisResult}</pre>
                     )}
                 </div>
             </ChartModal>
