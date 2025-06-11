@@ -4,7 +4,7 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 import Home from './pages/Home';
 import AppLayout from './components/AppLayout'; // AppLayout을 최상위에서 사용
 import ChartPage from './pages/Chart';
-// import SignupPage from './pages/SignupPage'; // 회원가입 페이지가 필요할 수 있습니다.
+import { UserProvider } from './contexts/UserContext'; // UserProvider 임포트
 
 // 사용자의 Google Client ID
 const GOOGLE_CLIENT_ID = "111472891391-00f7gch3d72blm7gujt008ecuvgds5qr.apps.googleusercontent.com";

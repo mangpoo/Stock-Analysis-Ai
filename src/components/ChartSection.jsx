@@ -1,15 +1,101 @@
+// src/components/ChartSection.jsx
+
 import React, { useState } from 'react';
 import './ChartSection.css';
-// config.jsx 파일 import
-import API_CONFIG from '../config'; // 경로는 프로젝트 구조에 따라 조정
+import ChartModal from './ChartModal';
+import API_CONFIG from '../config';
 
 export default function ChartSection({ ticker, stockName, stockPrice, stockChange, logoUrl, chartServerIp, stockCountryCode }) {
     const [summaries, setSummaries] = useState([]);
     const [isLoadingSummaries, setIsLoadingSummaries] = useState(false);
     const [summaryError, setSummaryError] = useState(null);
 
-    const handleChartAnalysis = () => {
-        console.log(`차트 분석 버튼 클릭됨: ${ticker} (국가: ${stockCountryCode})`);
+    // 차트 분석 모달 상태
+    const [isChartModalOpen, setIsChartModalOpen] = useState(false);
+    const [chartAnalysisResult, setChartAnalysisResult] = useState(null);
+    const [isLoadingChartAnalysis, setIsLoadingChartAnalysis] = useState(false);
+    const [chartAnalysisError, setChartAnalysisError] = useState(null);
+
+    // 통합 분석 모달 상태 관리
+    const [isConsolidatedModalOpen, setIsConsolidatedModalOpen] = useState(false);
+    const [consolidatedAnalysisResult, setConsolidatedAnalysisResult] = useState(null);
+    const [isLoadingConsolidatedAnalysis, setIsLoadingConsolidatedAnalysis] = useState(false);
+    const [consolidatedAnalysisError, setConsolidatedAnalysisError] = useState(null);
+
+    const handleChartAnalysis = async () => {
+        if (!ticker) {
+            setChartAnalysisError("종목 코드가 없습니다. 차트 분석을 할 수 없습니다.");
+            return;
+        }
+
+        setIsChartModalOpen(true);
+        setIsLoadingChartAnalysis(true);
+        setChartAnalysisResult(null);
+        setChartAnalysisError(null);
+
+        console.log(`차트 분석 요청 시작: ${ticker} (국가: ${stockCountryCode})`);
+
+        try {
+            // 1. 최근 1년간의 주가 데이터 가져오기
+            const today = new Date();
+            const endDate = today.toISOString().slice(0, 10).replace(/-/g, '');
+            const oneYearAgo = new Date(new Date().setFullYear(today.getFullYear() - 1));
+            const startDate = oneYearAgo.toISOString().slice(0, 10).replace(/-/g, '');
+            
+            const stockDataUrl = API_CONFIG.endpoints.stockData(stockCountryCode, ticker, startDate, endDate);
+            console.log(`주가 데이터 요청 URL: ${stockDataUrl}`);
+
+            const stockDataResponse = await fetch(stockDataUrl);
+            if (!stockDataResponse.ok) {
+                throw new Error(`주가 데이터(OHLCV)를 가져오는데 실패했습니다: ${stockDataResponse.statusText}`);
+            }
+            const historicalData = await stockDataResponse.json();
+
+            // 2. 주가 데이터를 포함하여 동적 프롬프트 생성
+            const promptText = `
+                ${stockName || ticker} 주식에 대한 차트 분석을 요청합니다.
+                현재 주가: ${stockPrice}, 등락률: ${stockChange}%.
+
+                최근 1년간의 일별 주가 데이터(JSON 형식)는 다음과 같습니다:
+                ${JSON.stringify(historicalData)}
+
+                이 데이터를 바탕으로 다음 항목을 포함하여 종합적인 기술적 분석과 실행 가능한 매매 전략을 제시해 주세요:
+                1.  **주요 추세**: 현재 장기 및 단기 추세 (상승, 하락, 횡보)는 무엇입니까?
+                2.  **지지선/저항선**: 중요한 지지선과 저항선 레벨을 구체적인 가격으로 알려주세요.
+                3.  **기술적 지표 분석**: 이동평균선(MA), 상대강도지수(RSI), MACD 등 주요 지표를 해석해주세요.
+                4.  **거래량 분석**: 최근 거래량 패턴은 무엇을 의미합니까?
+                5.  **예상 시나리오**: 가장 가능성 있는 상승 및 하락 시나리오를 설명해주세요.
+                6.  **매매 전략**: 위 분석을 바탕으로 단기 및 중장기적 관점에서의 매수, 매도, 또는 보유 전략을 제안해주세요.
+            `;
+
+            // 3. 생성된 프롬프트로 ChatGPT 분석 API 호출
+            const chatGptResponse = await fetch(API_CONFIG.endpoints.chatGptAnalyzeChart, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    prompt: promptText, 
+                    ticker: ticker, 
+                    countryCode: stockCountryCode 
+                }),
+            });
+
+            if (!chatGptResponse.ok) {
+                const errorData = await chatGptResponse.text();
+                throw new Error(`ChatGPT 분석 실패: ${chatGptResponse.status} ${chatGptResponse.statusText} - ${errorData}`);
+            }
+
+            const analysisData = await chatGptResponse.json();
+            setChartAnalysisResult(analysisData.analysis_text || "분석 결과를 가져오지 못했습니다.");
+            console.log("ChatGPT 차트 분석 결과:", analysisData);
+
+        } catch (error) {
+            console.error("차트 분석 처리 중 오류:", error);
+            setChartAnalysisError(error.message);
+        } finally {
+            setIsLoadingChartAnalysis(false); // 분석 로딩 종료
+        }
     };
 
     const handleNewsSummary = async () => {
@@ -25,7 +111,6 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
         setSummaries([]);
 
         try {
-            // config.jsx의 crawler endpoint 사용
             const crawlerResponse = await fetch(API_CONFIG.endpoints.crawler(ticker));
             if (!crawlerResponse.ok) {
                 const errorData = await crawlerResponse.text();
@@ -57,7 +142,6 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
                     return Promise.resolve(null);
                 }
 
-                // config.jsx의 getSummary endpoint 사용
                 const fullSummaryUrl = API_CONFIG.endpoints.getSummary(newsId);
                 console.log(`요약 요청 URL: ${fullSummaryUrl}`);
 
@@ -95,8 +179,76 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
         }
     };
 
-    const handleOtherAction = () => {
-        console.log(`통합 분석 버튼 클릭됨: ${ticker} (국가: ${stockCountryCode})`);
+    // 통합 분석 기능 핸들러
+    const handleConsolidatedAnalysis = async () => {
+        // 모달 열고 초기 상태 설정
+        setIsConsolidatedModalOpen(true);
+        setConsolidatedAnalysisResult(null);
+        setConsolidatedAnalysisError(null);
+
+        // 차트 분석 및 뉴스 요약 데이터가 있는지 확인
+        if (!chartAnalysisResult || summaries.length === 0) {
+            setConsolidatedAnalysisError("'차트 분석'과 '뉴스 요약'을 먼저 실행하여 데이터가 필요합니다.");
+            return;
+        }
+
+        setIsLoadingConsolidatedAnalysis(true);
+
+        try {
+            // 뉴스 요약 결과를 텍스트 형식으로 변환
+            const newsSummariesText = summaries
+                .map(s => `- 뉴스 제목: ${s.title || '제목 없음'}\n  - 핵심 이슈: ${s.issue || '정보 없음'}\n  - 시장 영향: ${s.impact || '정보 없음'}`)
+                .join('\n\n');
+
+            // 통합 분석을 위한 프롬프트 생성
+            const promptText = `
+                ### **${stockName || ticker} 주식 통합 분석 요청**
+
+                **1. AI 기반 기술적 분석 결과:**
+                ---
+                ${chartAnalysisResult}
+                ---
+
+                **2. 최신 뉴스 요약:**
+                ---
+                ${newsSummariesText}
+                ---
+
+                **### 요청 사항:**
+                위의 '기술적 분석'과 '뉴스 요약'을 종합적으로 고려하여, 투자자를 위한 최종 투자 전략을 제시해주세요. 다음 항목을 반드시 포함하여 구체적이고 실행 가능한 답변을 생성해주세요:
+
+                1.  **종합 평가 (Executive Summary):** 현재 주식의 상태를 '긍정적', '부정적', 또는 '중립적'으로 평가하고, 그 핵심 이유를 2~3문장으로 요약해주세요.
+                2.  **단기적 투자 전략 (1~4주):** 구체적인 진입 및 목표 가격, 손절 가격을 포함한 단기 매매 전략을 제시해주세요.
+                3.  **중장기적 투자 전략 (6개월~1년):** 중장기적 관점에서의 주가 전망과 투자 전략을 설명해주세요.
+                4.  **주요 리스크 요인:** 현재 분석에서 가장 중요하게 고려해야 할 잠재적 리스크는 무엇인가요?
+                5.  **핵심 기회 요인:** 반대로, 주가 상승을 이끌 수 있는 핵심 기회 요인은 무엇인가요?
+            `;
+
+            // 통합 분석 API 호출
+            const response = await fetch(API_CONFIG.endpoints.chatGptConsolidatedAnalysis, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    prompt: promptText, 
+                    ticker: ticker, 
+                    countryCode: stockCountryCode 
+                }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.text();
+                throw new Error(`통합 분석에 실패했습니다: ${response.status} - ${errorData}`);
+            }
+
+            const resultData = await response.json();
+            setConsolidatedAnalysisResult(resultData.analysis_text || "분석 결과를 가져오지 못했습니다.");
+
+        } catch (error) {
+            console.error("통합 분석 처리 중 오류:", error);
+            setConsolidatedAnalysisError(error.message);
+        } finally {
+            setIsLoadingConsolidatedAnalysis(false);
+        }
     };
 
     const startDate = "20000101";
@@ -106,8 +258,7 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
     const day = today.getDate().toString().padStart(2, '0');
     const endDate = `${year}${month}${day}`;
 
-    const countryForChart = (stockCountryCode === 'us'   || stockCountryCode === 'kr') ? stockCountryCode : 'kr';
-    // config.jsx의 chartIframe endpoint 사용
+    const countryForChart = (stockCountryCode === 'us' || stockCountryCode === 'kr') ? stockCountryCode : 'kr';
     const chartIframeSrc = API_CONFIG.endpoints.chartIframe(chartServerIp, countryForChart, ticker, startDate, endDate);
 
     if (!ticker) {
@@ -196,11 +347,15 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
                         </div>
                     </div>
 
-                    <div className="ai-analysis-card" onClick={handleOtherAction}>
+                    <div 
+                        className={`ai-analysis-card ${!chartAnalysisResult || summaries.length === 0 ? 'disabled' : ''}`} 
+                        onClick={handleConsolidatedAnalysis}
+                        title={!chartAnalysisResult || summaries.length === 0 ? "차트 분석과 뉴스 요약을 먼저 실행해주세요." : "통합 분석 실행"}
+                    >
                         <div className="ai-card-icon">💡</div>
                         <div className="ai-card-content">
                             <h4 className="ai-card-title">통합 분석</h4>
-                            <p className="ai-card-description">차트, 뉴스, 수급 등 다양한 데이터를 종합적으로 분석하여 투자 결정을 지원합니다.</p>
+                            <p className="ai-card-description">차트, 뉴스 등 다양한 데이터를 종합 분석하여 최종 투자 결정을 지원합니다.</p>
                         </div>
                     </div>
                 </div>
@@ -237,6 +392,60 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
                 <div style={{ marginTop: '10px' }}>
                 </div>
             )}
+
+            {/* 차트 분석 모달 */}
+            <ChartModal
+                isOpen={isChartModalOpen}
+                onClose={() => setIsChartModalOpen(false)}
+                title={`${stockName || ticker} 차트 분석`}
+            >
+                <div className="modal-chart-display">
+                    <iframe
+                        key={`${countryForChart}-${ticker}-${endDate}-modal`}
+                        className="chart-iframe"
+                        src={chartIframeSrc}
+                        title={`${stockName || ticker} Stock Chart (${countryForChart.toUpperCase()})`}
+                    ></iframe>
+                </div>
+                <div className="modal-analysis-result">
+                    <h4>AI 차트 분석 결과</h4>
+                    {isLoadingChartAnalysis && <p className="loading-message">차트 데이터를 분석 중입니다. 잠시만 기다려주세요...</p>}
+                    {chartAnalysisError && <p className="error-message">오류: {chartAnalysisError}</p>}
+                    {chartAnalysisResult && !isLoadingChartAnalysis && !chartAnalysisError && (
+                        <p>{chartAnalysisResult}</p>
+                    )}
+                    {!isLoadingChartAnalysis && !chartAnalysisError && !chartAnalysisResult && (
+                        <p>분석 결과를 기다리고 있습니다.</p>
+                    )}
+                </div>
+            </ChartModal>
+
+            {/* 통합 분석 모달 */}
+            <ChartModal
+                isOpen={isConsolidatedModalOpen}
+                onClose={() => setIsConsolidatedModalOpen(false)}
+                title={`${stockName || ticker} 통합 분석`}
+            >
+                <div className="modal-chart-display">
+                    <iframe
+                        key={`${countryForChart}-${ticker}-${endDate}-modal-consolidated`}
+                        className="chart-iframe"
+                        src={chartIframeSrc}
+                        title={`${stockName || ticker} Stock Chart (${countryForChart.toUpperCase()})`}
+                    ></iframe>
+                </div>
+                <div className="modal-analysis-result">
+                    <h4>AI 통합 분석 결과</h4>
+                    {isLoadingConsolidatedAnalysis && <p className="loading-message">차트와 뉴스 데이터를 종합하여 분석 중입니다. 잠시만 기다려주세요...</p>}
+                    {consolidatedAnalysisError && <p className="error-message">오류: {consolidatedAnalysisError}</p>}
+                    {consolidatedAnalysisResult && !isLoadingConsolidatedAnalysis && !consolidatedAnalysisError && (
+                        <p>{consolidatedAnalysisResult}</p>
+                    )}
+                    {!isLoadingConsolidatedAnalysis && !consolidatedAnalysisError && !consolidatedAnalysisResult && (
+                        <p>분석 결과를 기다리고 있습니다.</p>
+                    )}
+                </div>
+            </ChartModal>
         </div>
     );
 }

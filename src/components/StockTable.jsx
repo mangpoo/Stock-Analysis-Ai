@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import "./StockTable.css";
 import { useNavigate } from 'react-router-dom';
-import API_CONFIG from '../config'; // config.jsx 파일의 상대 경로에 맞게 수정해주세요.
+import API_CONFIG from '../config'; 
 
 export default function StockTable() {
     const [currentPage, setCurrentPage] = useState(1);
@@ -17,82 +17,61 @@ export default function StockTable() {
 
     const ITEMS_PER_PAGE = 10;
     const CHANGE_RANK_ITEMS_COUNT = 10;
-    // const IP = "192.168.0.18:5000/api"; // 이 줄은 삭제합니다.
 
     const navigate = useNavigate();
 
     const fetchChartData = useCallback(async (stockType) => {
-        try {
-            const listResponse = await fetch(API_CONFIG.endpoints.recommendList(stockType));
-            if (!listResponse.ok) {
-                throw new Error(`종목 목록 로딩 실패: ${listResponse.status}`);
-            }
-            const initialStockList = await listResponse.json();
+    try {
+        // 1. 추천 종목 목록 가져오기 (이름과 티커를 위해 필요)
+        const listResponse = await fetch(API_CONFIG.endpoints.recommendList(stockType));
+        if (!listResponse.ok) {
+            throw new Error(`추천 종목 목록 로딩 실패: ${listResponse.status}`);
+        }
+        const initialStockList = await listResponse.json(); // 예: [{ ticker: '005930', stock_name: '삼성전자' }, ...]
 
-            if (!Array.isArray(initialStockList) || initialStockList.length === 0) {
-                console.log(`추천 종목 목록이 비어있습니다 (${stockType}).`);
-                return [];
-            }
-
-            const detailPromises = initialStockList.map(async (stock) => {
-                if (!stock.ticker || !stock.stock_name) {
-                    console.warn("종목 목록 데이터에 ticker 또는 stock_name이 없습니다:", stock);
-                    return {
-                        name: stock.stock_name || "이름 없음",
-                        ticker: stock.ticker || "티커 없음",
-                        price: "N/A",
-                        change: 0.0,
-                        logo: API_CONFIG.endpoints.stockLogo(stockType, stock.ticker) // API_CONFIG 사용
-                    };
-                }
-                try {
-                    const detailResponse = await fetch(API_CONFIG.endpoints.stockDetails(stockType, stock.ticker));
-                    if (!detailResponse.ok) {
-                        console.warn(`티커 ${stock.ticker} 상세 정보 로딩 실패 (${stockType}): ${detailResponse.status}`);
-                        return {
-                            name: stock.stock_name,
-                            ticker: stock.ticker,
-                            price: "N/A",
-                            change: 0.0,
-                            logo: API_CONFIG.endpoints.stockLogo(stockType, stock.ticker) // API_CONFIG 사용
-                        };
-                    }
-                    const details = await detailResponse.json();
-
-                    const priceValue = details.yesterday_close;
-
-                    return {
-                        name: stock.stock_name,
-                        ticker: stock.ticker,
-                        price: typeof priceValue === 'number' ? priceValue : "N/A",
-                        change: typeof details.change_rate === 'number' ? details.change_rate : 0.0,
-                        logo: API_CONFIG.endpoints.stockLogo(stockType, stock.ticker), // API_CONFIG 사용
-                    };
-                } catch (e) {
-                    console.error(`티커 ${stock.ticker} 상세 정보 fetch 또는 처리 중 오류 (${stockType}):`, e);
-                    return {
-                        name: stock.stock_name,
-                        ticker: stock.ticker,
-                        price: "N/A",
-                        change: 0.0,
-                        logo: API_CONFIG.endpoints.stockLogo(stockType, stock.ticker) // API_CONFIG 사용
-                    };
-                }
-            });
-
-            const combinedDataResults = await Promise.allSettled(detailPromises);
-            const finalChartData = combinedDataResults
-                .filter(result => result.status === 'fulfilled')
-                .map(result => result.value);
-
-            return finalChartData;
-
-        } catch (e) {
-            console.error(`차트 데이터 로딩 중 전체 오류 발생 (${stockType}):`, e);
-            setError(`데이터 로딩 실패 (${stockType}): ${e.message}`);
+        if (!Array.isArray(initialStockList) || initialStockList.length === 0) {
+            console.log(`추천 종목 목록이 비어있습니다 (${stockType}).`);
             return [];
         }
-    }, []); // IP를 의존성 배열에서 제거했습니다.
+
+        // 2. 새로운 bulk API로 모든 종목의 가격/변동률 정보 한 번에 가져오기
+        const allChangesResponse = await fetch(API_CONFIG.endpoints.getAllChanges(stockType));
+        if (!allChangesResponse.ok) {
+            throw new Error(`전체 가격 정보 로딩 실패: ${allChangesResponse.status}`);
+        }
+        const allChangesData = await allChangesResponse.json(); // 예: [{ ticker: '005930', changerate: { ... } }, ...]
+
+        // 3. 빠른 조회를 위해 가격/변동률 데이터를 Map 형태로 변환 (key: 티커)
+        const changesMap = new Map();
+        allChangesData.forEach(item => {
+            if (item.ticker && item.changerate) {
+                changesMap.set(item.ticker, item.changerate);
+            }
+        });
+
+        // 4. 추천 종목 목록을 기준으로, Map에서 데이터를 합쳐 최종 데이터 생성
+        const finalChartData = initialStockList.map(stock => {
+            const changeInfo = changesMap.get(stock.ticker);
+            const priceValue = changeInfo ? changeInfo.yesterday_close : "N/A";
+            const changeRate = changeInfo ? changeInfo.change_rate : 0.0;
+
+            return {
+                name: stock.stock_name,
+                ticker: stock.ticker,
+                price: typeof priceValue === 'number' ? priceValue : "N/A",
+                change: typeof changeRate === 'number' ? changeRate : 0.0,
+                logo: API_CONFIG.endpoints.stockLogo(stockType, stock.ticker),
+            };
+        });
+
+        return finalChartData;
+
+    } catch (e) {
+        console.error(`차트 데이터 로딩 중 전체 오류 발생 (${stockType}):`, e);
+        setError(`데이터 로딩 실패 (${stockType}): ${e.message}`);
+        return [];
+    }
+}, []); // 종속성 배열은 비어있어도 괜찮습니다.
 
     useEffect(() => {
         const loadAllData = async () => {

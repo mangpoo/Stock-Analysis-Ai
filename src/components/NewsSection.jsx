@@ -100,7 +100,7 @@ export default function NewsSection() {
   return (
     <div className="news-section">
       <div className="news-header">
-        <h2>실시간 뉴스</h2>
+        <h2>주요 뉴스</h2>
       </div>
       
       <div className="news-content-wrapper">
