@@ -2,8 +2,8 @@
 
 // 주식 데이터, 로고, 메인 API를 위한 기본 호스트 정보
 
-const STOCK_SERVER_HOST = "http://16.184.17.9:5000";
-// const STOCK_SERVER_HOST = "http://ddolddol2.duckdns.org/api";
+// const STOCK_SERVER_HOST = "http://16.184.17.9:5000";
+const STOCK_SERVER_HOST = "https://ddolddol2.duckdns.org/api";
 
 // 외부 서비스 (예: 크롤러, 요약, 차트 분석, 통합 분석)를 위한 기본 호스트 정보
 // 플라스크 .env의 CRAWLER_SERVER_HOST와 동일한 주소입니다.
@@ -18,7 +18,8 @@ const STOCK_API_BASE_URL = `${STOCK_SERVER_HOST}`;
 const EXTERNAL_API_BASE_URL = `${EXTERNAL_SERVER_HOST}`;
 // 백엔드 API의 호스트를 명확히 정의합니다.
 // 이 주소는 app.py가 실행되는 서버의 IP와 포트(5001)를 사용해야 합니다.
-const BACKEND_API_HOST = "http://127.0.0.1:5001"; // 또는 app.py의 실행 주소 (예: http://your-backend-ip:5001)
+// const BACKEND_API_HOST = "http://127.0.0.1:5001"; // 또는 app.py의 실행 주소 (예: http://your-backend-ip:5001)
+const BACKEND_API_HOST = "http://ddolddol2.duckdns.org:5000";
 
 const API_CONFIG = {
     STOCK_API_BASE_URL: STOCK_API_BASE_URL,
