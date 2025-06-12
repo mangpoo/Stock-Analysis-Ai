@@ -7,7 +7,8 @@
 
 // 외부 서비스 (예: 크롤러, 요약, 차트 분석, 통합 분석)를 위한 기본 호스트 정보
 // 플라스크 .env의 CRAWLER_SERVER_HOST와 동일한 주소입니다.
-const EXTERNAL_SERVER_HOST = "http://minjun0410.iptime.org:5000";
+// const EXTERNAL_SERVER_HOST = "http://minjun0410.iptime.org:5000";
+const EXTERNAL_SERVER_HOST = "https://ddolddol2.duckdns.org/ai";
 
 // Google 로그인/인증을 위한 백엔드 API 기본 URL
 // Flask 백엔드의 배포 주소인 http://ddolddol2.duckdns.org:5000을 사용합니다.
