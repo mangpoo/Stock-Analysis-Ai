@@ -8,9 +8,9 @@ import requests
 import pymysql
 import os
 from dotenv import load_dotenv
-from datetime import timedelta
+from datetime import timedelta, datetime
 import time
-from gpt_analyzer import gpt_analyzer
+from main_news_crawler import *
 
 # ✅ 시스템 타임존을 Asia/Seoul로 설정
 os.environ['TZ'] = 'Asia/Seoul'
@@ -18,9 +18,7 @@ time.tzset()
 
 # 환경변수 로딩
 load_dotenv()
-SDS_SERVER_IP = os.getenv("SDS_SERVER_IP")
-SDS_SERVER_HOST = os.getenv("SDS_SERVER_IP")
-SDS_SERVER_PORT = os.getenv("SDS_SERVER_PORT")
+SDS_SERVER = os.getenv("SDS_SERVER_IP")  # 이제 IP:PORT 형태
 JWT_SECRET = os.getenv("JWT_SECRET", "your-secret-key")  # .env에 JWT_SECRET 추가 추천
 MYSQL_HOST = os.getenv("MYSQL_HOST", "localhost")
 MYSQL_PORT = int(os.getenv("MYSQL_PORT", 3306))
@@ -28,6 +26,7 @@ MYSQL_USER = os.getenv("MYSQL_USER", "root")
 MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "010216")
 MYSQL_DB = os.getenv("MYSQL_DB", "myapp_db")
 CRAWLER_SERVER_HOST = os.getenv("CRAWLER_SERVER_HOST")
+AI_SERVER = os.getenv("AI_SERVER")
 
 print("✅ 서버 진입함")
 
@@ -45,7 +44,9 @@ CORS(app, origins=[
 # JWT 설정
 app.config["JWT_SECRET_KEY"] = JWT_SECRET
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=1)  # ⏰ JWT 토큰 만료 시간 설정 (1시간)
+app.config['JSON_AS_ASCII'] = False
 jwt = JWTManager(app)
+
 
 # ⏳ 만료된 JWT에 대한 응답 처리
 @jwt.expired_token_loader
@@ -168,8 +169,23 @@ def add_recent_stock():
             if not result:
                 return jsonify({"status": "error", "message": "사용자 없음"}), 404
             user_id = result['id']
-            sql = "INSERT INTO recent_stocks (user_id, stock_code) VALUES (%s, %s)"
-            cursor.execute(sql, (user_id, stock_code))
+
+            # 기존 최근 목록 조회
+            cursor.execute("SELECT recent_list FROM recent_stocks WHERE user_id=%s", (user_id,))
+            row = cursor.fetchone()
+            current_list = row['recent_list'].split(',') if row and row['recent_list'] else []
+
+            # 중복 제거 후 앞에 삽입
+            if stock_code in current_list:
+                current_list.remove(stock_code)
+            current_list.insert(0, stock_code)
+
+            # 최대 10개 제한
+            current_list = current_list[:10]
+            updated_list = ','.join(current_list)
+
+            # 저장
+            cursor.execute("REPLACE INTO recent_stocks (user_id, recent_list) VALUES (%s, %s)", (user_id, updated_list))
         conn.commit()
     except Exception as e:
         print("❌ 최근 본 종목 저장 실패:", e)
@@ -192,15 +208,17 @@ def get_recent_stocks():
             if not result:
                 return jsonify({"status": "error", "message": "사용자 없음"}), 404
             user_id = result['id']
-            sql = "SELECT stock_code, viewed_at FROM recent_stocks WHERE user_id=%s ORDER BY viewed_at DESC LIMIT 20"
-            cursor.execute(sql, (user_id,))
-            rows = cursor.fetchall()
+
+            cursor.execute("SELECT recent_list FROM recent_stocks WHERE user_id=%s", (user_id,))
+            row = cursor.fetchone()
+            stock_list = row['recent_list'].split(',') if row and row['recent_list'] else []
+
     except Exception as e:
         print("❌ 최근 종목 조회 실패:", e)
         return jsonify({"status": "error"}), 500
     finally:
         conn.close()
-    return jsonify(rows)
+    return jsonify(stock_list)
 
 # 관심 종목 추가
 @app.route('/favorite', methods=['POST'])
@@ -218,8 +236,16 @@ def add_favorite_stock():
             if not result:
                 return jsonify({"status": "error", "message": "사용자 없음"}), 404
             user_id = result['id']
-            sql = "INSERT IGNORE INTO favorite_stocks (user_id, stock_code) VALUES (%s, %s)"
-            cursor.execute(sql, (user_id, stock_code))
+
+            cursor.execute("SELECT favorite_list FROM favorite_stocks WHERE user_id=%s", (user_id,))
+            row = cursor.fetchone()
+            current_list = row['favorite_list'].split(',') if row and row['favorite_list'] else []
+
+            if stock_code not in current_list:
+                current_list.append(stock_code)
+                updated_list = ','.join(current_list)
+                cursor.execute("REPLACE INTO favorite_stocks (user_id, favorite_list) VALUES (%s, %s)", (user_id, updated_list))
+
         conn.commit()
     except Exception as e:
         print("❌ 관심 종목 저장 실패:", e)
@@ -244,8 +270,16 @@ def delete_favorite_stock():
             if not result:
                 return jsonify({"status": "error", "message": "사용자 없음"}), 404
             user_id = result['id']
-            sql = "DELETE FROM favorite_stocks WHERE user_id=%s AND stock_code=%s"
-            cursor.execute(sql, (user_id, stock_code))
+
+            cursor.execute("SELECT favorite_list FROM favorite_stocks WHERE user_id=%s", (user_id,))
+            row = cursor.fetchone()
+            current_list = row['favorite_list'].split(',') if row and row['favorite_list'] else []
+
+            if stock_code in current_list:
+                current_list.remove(stock_code)
+                updated_list = ','.join(current_list)
+                cursor.execute("REPLACE INTO favorite_stocks (user_id, favorite_list) VALUES (%s, %s)", (user_id, updated_list))
+
         conn.commit()
     except Exception as e:
         print("❌ 관심 종목 삭제 실패:", e)
@@ -268,15 +302,17 @@ def get_favorite_stocks():
             if not result:
                 return jsonify({"status": "error", "message": "사용자 없음"}), 404
             user_id = result['id']
-            sql = "SELECT stock_code, added_at FROM favorite_stocks WHERE user_id=%s ORDER BY added_at DESC"
-            cursor.execute(sql, (user_id,))
-            rows = cursor.fetchall()
+
+            cursor.execute("SELECT favorite_list FROM favorite_stocks WHERE user_id=%s", (user_id,))
+            row = cursor.fetchone()
+            stock_list = row['favorite_list'].split(',') if row and row['favorite_list'] else []
+
     except Exception as e:
         print("❌ 관심 종목 조회 실패:", e)
         return jsonify({"status": "error"}), 500
     finally:
         conn.close()
-    return jsonify(rows)
+    return jsonify(stock_list)
 
 # 기본 라우트 및 정적 리소스
 @app.route('/api/hello')
@@ -289,7 +325,7 @@ def serve_react():
 
 @app.route('/api/<path:path>', methods=['GET', 'POST'])
 def proxy(path):
-    url = f"http://{SDS_SERVER_IP}:{SDS_SERVER_PORT}/{path}"
+    url = f"http://{SDS_SERVER}/{path}"
     if request.method == "GET":
         resp = requests.get(url, params=request.args)
     else:
@@ -300,13 +336,35 @@ def proxy(path):
         content_type=resp.headers.get("Content-Type", "application/json")
     )
 
+#뉴스 요약용도의 프록시
+@app.route('/ai/<path:path>', methods=['GET', 'POST'])
+def proxy_ai(path):
+    url = f"http://minjun0410.iptime.org:5000/{path}"
+    if request.method == "GET":
+        resp = requests.get(url, params=request.args)
+    else:
+        resp = requests.post(url, json=request.get_json())
+    return Response(
+        resp.content,
+        status=resp.status_code,
+        content_type=resp.headers.get("Content-Type", "application/json")
+    )
+
+
+
 @app.errorhandler(404)
 def not_found(e):
     return send_from_directory(app.static_folder, 'index.html')
 
 
-# anal
+#
+# anal* field
+#
+GREETING = "안녕하세요! 똘똘한 주식 분석 인공지능 똘똘이에요. 😊\n\n"
+
+# 주가 히스토리 데이터 가져오기
 def get_stock_history(country, ticker, days=90):
+    """지정한 기간의 주가 데이터 가져오기"""
     try:
         end_date = datetime.now()
         start_date = end_date - timedelta(days=days)
@@ -314,7 +372,7 @@ def get_stock_history(country, ticker, days=90):
         from_date = start_date.strftime('%Y%m%d')
         to_date = end_date.strftime('%Y%m%d')
 
-        url = f"http://{SDS_SERVER_IP}/{country}/{ticker}/{from_date}/{to_date}"
+        url = f"https://ddolddol2.duckdns.org/api/{country}/{ticker}/{from_date}/{to_date}"
         print(f"주가 히스토리 요청: {url}")
 
         response = requests.get(url, timeout=15)
@@ -329,9 +387,11 @@ def get_stock_history(country, ticker, days=90):
         print(f"주가 히스토리 가져오기 실패: {e}")
         return []
 
+# 뉴스 데이터 가져오기 (5개)
 def get_news_data(ticker):
+    """뉴스 요약 데이터 5개 가져오기"""
     try:
-        url = f"{CRAWLER_SERVER_HOST}/crawler/{ticker}"
+        url = f"https://ddolddol2.duckdns.org/ai/crawler/{ticker}"
         print(f"뉴스 요청: {url}")
 
         news_response = requests.get(url, timeout=30)
@@ -348,7 +408,7 @@ def get_news_data(ticker):
         for i, news_url in enumerate(news_data['success'][:5], 1):
             try:
                 print(f"뉴스 {i}/5 요약 가져오는 중...")
-                summary_response = requests.get(news_url, timeout=20)
+                summary_response = requests.get(AI_SERVER + news_url, timeout=20)
                 if summary_response.status_code == 200:
                     summary_data = summary_response.json()
                     news_summaries.append({
@@ -370,17 +430,15 @@ def get_news_data(ticker):
         print(f"뉴스 데이터 가져오기 실패: {e}")
         return []
 
-
-@app.route('/api/analyze/<string:country>/<string:ticker>', methods=['GET'])
-def analyze_stock(country, ticker):
+    # GPT 통합 분석 API
+@app.route('/api/analyze/<string:country>/<string:ticker>/<string:stock_name>', methods=['GET'])
+def analyze_stock(country, ticker, stock_name):
+    """주식 종합 분석 API"""
     try:
-        if not gpt_analyzer:
-            return jsonify({
-                "status": "error",
-                "message": "GPT 분석기가 초기화되지 않았습니다."
-            }), 500
+        from gpt_analyzer import StockGPTAnalyzer
+        analyzer = StockGPTAnalyzer()
 
-        print(f"{country}/{ticker} 분석 시작")
+        print(f"{country}/{ticker} 통합 분석 시작")
 
         price_history = get_stock_history(country, ticker, days=90)
         news_data = get_news_data(ticker)
@@ -389,27 +447,80 @@ def analyze_stock(country, ticker):
             "stock_code": ticker,
             "country": country.upper(),
             "price_history": price_history,
+            "stock_name": stock_name,
             "news": news_data
         }
 
         print(f"데이터 수집 완료: 주가 {len(price_history)}일, 뉴스 {len(news_data)}개")
 
-        print("GPT 분석 시작...")
-        result = gpt_analyzer.analyze_stock(stock_data)
+        result = analyzer.analyze_comprehensive(stock_data)
 
-        if result['status'] == 'success':
-            print(f"GPT 분석 완료 - 토큰 사용: {result.get('token_usage', 0)}")
-        else:
-            print(f"GPT 분석 실패: {result.get('message')}")
-
-        return jsonify(result), 200
+        return jsonify({
+            "status": "success",
+            "analysis": GREETING + result
+        }), 200
 
     except Exception as e:
-        print(f"분석 오류: {e}")
+        print(f"통합 분석 오류: {e}")
         return jsonify({
             "status": "error",
-            "message": f"분석 중 오류가 발생했습니다: {str(e)}"
+            "analysis": f"분석 중 오류가 발생했습니다: {str(e)}"
         }), 500
+
+# GPT 주가 분석 API
+@app.route('/api/analyze-price/<string:country>/<string:ticker>', methods=['GET'])
+def analyze_price_only(country, ticker):
+    """주가만 분석하는 API"""
+    try:
+        from gpt_analyzer import StockGPTAnalyzer
+        analyzer = StockGPTAnalyzer()
+
+        print(f"{country}/{ticker} 주가 분석 시작")
+
+        price_history = get_stock_history(country, ticker, days=90)
+
+        stock_data = {
+            "stock_code": ticker,
+            "country": country.upper(),
+            "price_history": price_history
+        }
+
+        print(f"주가 데이터 {len(price_history)}일 수집 완료")
+
+        result = analyzer.analyze_price_only(stock_data)
+
+        return jsonify({
+            "status": "success",
+            "analysis": GREETING + result
+        }), 200
+
+    except Exception as e:
+        print(f"주가 분석 오류: {e}")
+        return jsonify({
+            "status": "error",
+            "analysis": f"분석 중 오류가 발생했습니다: {str(e)}"
+        }), 500
+
+
+MAIN_NEWS_TICK = 300
+
+main_news_cache = {
+    "last_updated_time" : time.time(),
+    "data" : None
+}
+
+@app.route('/get_main_news', methods = ['GET'])
+def get_main_news():
+    time_out = (time.time() - main_news_cache['last_updated_time']) > MAIN_NEWS_TICK
+
+    if(not time_out and main_news_cache['data'] != None):
+        return jsonify(main_news_cache['data'])
+    
+    else:
+        main_news_cache['last_updated_time'] = time.time()
+        main_news_cache['data'] = main_news_get()
+        return jsonify(main_news_cache['data'])
+
 
 
 
