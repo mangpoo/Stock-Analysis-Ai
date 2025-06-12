@@ -144,7 +144,12 @@ def get_current_user():
             cursor.execute(sql, (user_google_id,))
             result = cursor.fetchone()
             if result:
-                return jsonify(result), 200
+                return jsonify({
+                    "google_id": result["google_id"],
+                    "email": result["email"],
+                    "name": result["name"],
+                    "picture": result["profile_img"]  # 프론트에서 기대하는 key 이름에 맞춰 반환
+                }), 200
             else:
                 return jsonify({"status": "error", "message": "사용자 없음"}), 404
     except Exception as e:
@@ -154,7 +159,7 @@ def get_current_user():
         conn.close()
 
 # 최근 본 종목 추가
-@app.route('/recent', methods=['POST'])
+@app.route('/api/recent', methods=['POST'])
 @jwt_required()
 def add_recent_stock():
     data = request.get_json()
@@ -195,7 +200,7 @@ def add_recent_stock():
     return jsonify({"status": "ok"})
 
 # 최근 본 종목 조회
-@app.route('/recent', methods=['GET'])
+@app.route('/api/recent', methods=['GET'])
 @jwt_required()
 def get_recent_stocks():
     user_google_id = get_jwt_identity()
@@ -221,7 +226,7 @@ def get_recent_stocks():
     return jsonify(stock_list)
 
 # 관심 종목 추가
-@app.route('/favorite', methods=['POST'])
+@app.route('/api/favorite', methods=['POST'])
 @jwt_required()
 def add_favorite_stock():
     data = request.get_json()
@@ -255,7 +260,7 @@ def add_favorite_stock():
     return jsonify({"status": "ok"})
 
 # 관심 종목 삭제
-@app.route('/favorite', methods=['DELETE'])
+@app.route('/api/favorite', methods=['DELETE'])
 @jwt_required()
 def delete_favorite_stock():
     data = request.get_json()
@@ -289,7 +294,7 @@ def delete_favorite_stock():
     return jsonify({"status": "ok"})
 
 # 관심 종목 조회
-@app.route('/favorite', methods=['GET'])
+@app.route('/api/favorite', methods=['GET'])
 @jwt_required()
 def get_favorite_stocks():
     user_google_id = get_jwt_identity()
@@ -313,6 +318,45 @@ def get_favorite_stocks():
     finally:
         conn.close()
     return jsonify(stock_list)
+
+
+
+#관심 종목 확인 API ( 별 버튼 용도)
+@app.route('/api/favorite/check', methods=['GET'])
+@jwt_required()
+def check_favorite_stock():
+    user_google_id = get_jwt_identity()
+    stock_code = request.args.get('stock_code')
+
+    if not stock_code:
+        return jsonify({"status": "error", "message": "종목 코드 누락"}), 400
+
+    conn = get_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT id FROM users WHERE google_id=%s", (user_google_id,))
+            result = cursor.fetchone()
+            if not result:
+                return jsonify({"status": "error", "message": "사용자 없음"}), 404
+            user_id = result['id']
+
+            cursor.execute("SELECT favorite_list FROM favorite_stocks WHERE user_id=%s", (user_id,))
+            row = cursor.fetchone()
+            favorite_list = row['favorite_list'].split(',') if row and row['favorite_list'] else []
+
+            return jsonify({
+                "status": "ok",
+                "is_favorite": stock_code in favorite_list
+            }), 200
+
+    except Exception as e:
+        print("❌ 찜 여부 확인 실패:", e)
+        return jsonify({"status": "error", "message": "DB 오류"}), 500
+    finally:
+        conn.close()
+
+
+
 
 # 기본 라우트 및 정적 리소스
 @app.route('/api/hello')
@@ -468,8 +512,8 @@ def analyze_stock(country, ticker, stock_name):
         }), 500
 
 # GPT 주가 분석 API
-@app.route('/api/analyze-price/<string:country>/<string:ticker>', methods=['GET'])
-def analyze_price_only(country, ticker):
+@app.route('/api/analyze-price/<string:country>/<string:ticker>/<string:stock_name>', methods=['GET'])
+def analyze_price_only(country, ticker, stock_name):
     """주가만 분석하는 API"""
     try:
         from gpt_analyzer import StockGPTAnalyzer
@@ -482,6 +526,7 @@ def analyze_price_only(country, ticker):
         stock_data = {
             "stock_code": ticker,
             "country": country.upper(),
+            "stock_name": stock_name,
             "price_history": price_history
         }
 
@@ -509,13 +554,13 @@ main_news_cache = {
     "data" : None
 }
 
-@app.route('/get_main_news', methods = ['GET'])
+@app.route('/api/get_main_news', methods = ['GET'])
 def get_main_news():
     time_out = (time.time() - main_news_cache['last_updated_time']) > MAIN_NEWS_TICK
 
     if(not time_out and main_news_cache['data'] != None):
         return jsonify(main_news_cache['data'])
-    
+
     else:
         main_news_cache['last_updated_time'] = time.time()
         main_news_cache['data'] = main_news_get()
