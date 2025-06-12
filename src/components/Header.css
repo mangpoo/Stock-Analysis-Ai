@@ -77,7 +77,14 @@
   text-align: center;
   font-size: 14px;
 }
-
+.search-result-logo {
+    width: 20px;   /* 로고 이미지 크기 조정 */
+    height: 20px;  /* 로고 이미지 크기 조정 */
+    vertical-align: middle; /* 텍스트와 세로 정렬 */
+    margin-right: 8px; /* 로고와 텍스트 사이 간격 */
+    border-radius: 4px; /* 살짝 둥근 모서리 */
+    object-fit: contain; /* 이미지 비율 유지 */
+}
 
 /* 로그인 버튼 */
 .login-btn {

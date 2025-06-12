@@ -59,7 +59,7 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
         }
     };
 
-    // --- 뉴스 요약 핸들러 (기존 로직 유지, 백엔드 SDS 서버 호출) ---
+    // --- 뉴스 요약 핸들러 (MODIFIED) ---
     const handleNewsSummary = async () => {
         if (!ticker) {
             setSummaryError("종목 코드가 없습니다.");
@@ -67,13 +67,42 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
         }
         if (isLoadingSummaries) return;
 
-        console.log(`뉴스 요약 요청 시작: ${ticker} (국가: ${stockCountryCode})`);
         setIsLoadingSummaries(true);
         setSummaryError(null);
         setSummaries([]);
 
         try {
-            const crawlerResponse = await fetch(API_CONFIG.endpoints.crawler(ticker));
+            let nameForNews = stockName; // 기본값으로 현재 종목명 사용
+
+            // 미국 주식일 경우, 한글 종목명을 조회
+            if (stockCountryCode === 'us') {
+                console.log(`미국 종목(${ticker})의 한글 이름 조회를 시작합니다.`);
+                try {
+                    const krNameResponse = await fetch(API_CONFIG.endpoints.getKrName(ticker));
+                    if (krNameResponse.ok) {
+                        const krNameData = await krNameResponse.json();
+                        // **MODIFICATION START**
+                        // 한글 이름이 있고, 'N/A'가 아닐 때만 한글 이름 사용
+                        if (krNameData.name && krNameData.name !== 'N/A') {
+                            nameForNews = krNameData.name;
+                            console.log(`뉴스 요약에 사용할 한글 이름: '${nameForNews}'`);
+                        } else {
+                            // 받은 값이 'N/A'이거나 이름이 없는 경우, 원래 영문명을 사용
+                            console.log(`'${ticker}'에 대한 유효한 한글 이름이 없습니다 (받은 값: ${krNameData.name}). 기존 영문명 '${stockName}'을(를) 사용합니다.`);
+                        }
+                        // **MODIFICATION END**
+                    } else {
+                        console.warn(`한글 이름 조회 API 호출 실패. 기존 종목명 '${stockName}'을(를) 사용합니다.`);
+                    }
+                } catch (error) {
+                    console.error("한글 이름 조회 중 오류 발생. 기존 종목명을 사용합니다:", error);
+                }
+            }
+            
+            console.log(`뉴스 요약 요청 시작: ${nameForNews} (국가: ${stockCountryCode})`);
+
+            // 결정된 이름(한글 또는 영문)으로 크롤러 API 호출
+            const crawlerResponse = await fetch(API_CONFIG.endpoints.crawler(nameForNews));
             if (!crawlerResponse.ok) {
                 const errorData = await crawlerResponse.text();
                 throw new Error(`뉴스 목록을 가져오는데 실패했습니다: ${crawlerResponse.status} ${crawlerResponse.statusText} - ${errorData}`);
@@ -97,10 +126,7 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
                     return Promise.resolve(null);
                 }
                 
-                // **MODIFICATION START**
-                // Prepend the full host for news summary requests to avoid mixed content issues
                 const fullSummaryUrl = `https://ddolddol2.duckdns.org/ai${pathString}`;
-                // **MODIFICATION END**
 
                 return fetch(fullSummaryUrl, { timeout: 20000 })
                     .then(res => {
@@ -181,6 +207,7 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
         }
     };
 
+    // ... (이하 나머지 컴포넌트 코드는 이전과 동일합니다) ...
     const startDate = "20000101";
     const today = new Date();
     const year = today.getFullYear();
@@ -252,9 +279,6 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
                     </div>
 
                     {/* 뉴스 요약 버튼 */}
-                    {/* NOTE: 이 뉴스 요약 버튼의 역할에 대해 재고해볼 필요가 있습니다.
-                                백엔드의 통합 분석 API가 이미 뉴스를 포함하므로, 이 버튼이 별도로 필요한지 확인하세요.
-                                만약 '뉴스 요약'을 독립적인 기능으로 제공하고 싶다면, 백엔드에 해당 API를 명확히 분리해야 합니다. */}
                     <div
                         className={`ai-analysis-card ${isLoadingSummaries ? 'disabled' : ''}`}
                         onClick={!isLoadingSummaries ? handleNewsSummary : undefined}
@@ -269,10 +293,8 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
                     </div>
 
                     {/* 통합 분석 버튼 */}
-                    {/* 통합 분석은 백엔드에서 모든 데이터를 가져오므로, 여기서는 단순히 API를 호출하면 됩니다.
-                                    UI 상의 'disabled' 조건은 사용자의 이해를 돕기 위함입니다. */}
-                    <div 
-                        className="ai-analysis-card" // 조건부 disabled 클래스는 제거하여 항상 클릭 가능하게 함
+                    <div
+                        className="ai-analysis-card"
                         onClick={handleConsolidatedAnalysis}
                     >
                         <div className="ai-card-icon">💡</div>
@@ -352,7 +374,7 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
                     {isLoadingConsolidatedAnalysis && <p className="loading-message">차트와 뉴스 데이터를 종합하여 분석 중입니다. 잠시만 기다려주세요...</p>}
                     {consolidatedAnalysisError && <p className="error-message">오류: {consolidatedAnalysisError}</p>}
                     {consolidatedAnalysisResult && !isLoadingConsolidatedAnalysis && !consolidatedAnalysisError && (
-                               <pre className="analysis-text">{consolidatedAnalysisResult}</pre>
+                                  <pre className="analysis-text">{consolidatedAnalysisResult}</pre>
                     )}
                 </div>
             </ChartModal>

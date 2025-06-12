@@ -87,9 +87,6 @@ export default function Header() {
   // 로그인 삽입 2번 끝 ==========
 
 
-
-
-
     useEffect(() => {
         function handleClickOutside(event) {
             if (searchContainerRef.current && !searchContainerRef.current.contains(event.target)) {
@@ -127,9 +124,28 @@ export default function Header() {
                 const data = await res.json();
                 if (data.length === 0) {
                     setResults([]);
-                    
+                    // 검색 결과가 없을 때 메시지를 표시
+                    setMessage('검색 결과가 없습니다.');
                 } else {
-                    setResults(data);
+                    // **MODIFIED:** Transform results to include logo URLs
+                    const resultsWithLogos = await Promise.all(data.map(async item => {
+                        const countryCode = (item.source && item.source.toLowerCase().substring(0, 2) === 'kr') ? 'kr' : 'us';
+                        const logoUrl = API_CONFIG.endpoints.stockLogo(countryCode, item.ticker);
+                        
+                        // Check if the logo URL actually returns an image
+                        try {
+                            const logoRes = await fetch(logoUrl);
+                            if (logoRes.ok) {
+                                return { ...item, logoUrl: logoUrl };
+                            } else {
+                                return { ...item, logoUrl: '' }; // No valid logo found
+                            }
+                        } catch (error) {
+                            console.warn(`Failed to fetch logo for ${item.ticker}:`, error);
+                            return { ...item, logoUrl: '' }; // Fallback if fetch fails
+                        }
+                    }));
+                    setResults(resultsWithLogos);
                     setMessage('');
                 }
             } catch (error) {
@@ -151,20 +167,19 @@ export default function Header() {
     };
 
     const handleResultClick = (item) => {
+        const country = (item.source && item.source.toLowerCase().substring(0, 2) === 'kr') ? 'kr' : 'us';
+
         navigate(`/chart/${item.ticker}`, {
             state: {
                 stockName: item.name,
-                stockType: item.source // 'stockSource' 대신 'stockType'으로 전달
+                stockType: item.source, // 'stockSource' 대신 'stockType'으로 전달 (기존 로직 유지)
+                stockCountryCode: country // country code도 넘겨줌
             }
         });
         setQuery('');
         setResults([]);
         setShowResults(false);
     };
-
-    
-
-    
 
     return (
         <header className="header">
@@ -179,7 +194,7 @@ export default function Header() {
                 />
                 {showResults && query.length > 0 && (
                     <div className="search-results">
-                        {results.length > 0 && (
+                        {results.length > 0 ? (
                             <ul>
                                 {results.map((item) => (
                                     <li
@@ -187,18 +202,25 @@ export default function Header() {
                                         onClick={() => handleResultClick(item)}
                                         style={{ cursor: 'pointer' }}
                                     >
-                                        {`[${item.ticker}] ${item.name} (${item.source})`}
+                                        {item.logoUrl && (
+                                            <img 
+                                                src={item.logoUrl} 
+                                                alt={`${item.name} 로고`} 
+                                                className="search-result-logo" 
+                                                onError={(e) => { e.target.style.display = 'none'; }} // 이미지 로드 실패 시 숨김
+                                            />
+                                        )}
+                                        {`${item.name} [${item.ticker}]`}
                                     </li>
                                 ))}
                             </ul>
+                        ) : (
+                            // 검색 결과가 없을 때만 메시지 표시
+                            <div className="search-message">{message || ''}</div>
                         )}
-                        {/* 검색 관련 메시지 표시 */}
-                        {message && results.length === 0 && query.length > 0 && <div className="search-message">{message}</div>}
                     </div>
                 )}
             </div>
-
-
 
             {user ? (
               <div className="user-info">
@@ -209,8 +231,6 @@ export default function Header() {
             ) : (
               <button className="login-btn" onClick={() => login()}>로그인</button>
             )}
-
-
 
             {/* 검색 결과가 표시되지 않을 경우 일반/로그인 오류 메시지 표시 */}
             {message && (!showResults || results.length === 0 && query.length === 0) && <div className="header-message" style={{ color: 'red', marginLeft: '10px', flexGrow: 1, textAlign: 'center' }}>{message}</div>}
