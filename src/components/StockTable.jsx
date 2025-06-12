@@ -21,57 +21,57 @@ export default function StockTable() {
     const navigate = useNavigate();
 
     const fetchChartData = useCallback(async (stockType) => {
-    try {
-        // 1. 추천 종목 목록 가져오기 (이름과 티커를 위해 필요)
-        const listResponse = await fetch(API_CONFIG.endpoints.recommendList(stockType));
-        if (!listResponse.ok) {
-            throw new Error(`추천 종목 목록 로딩 실패: ${listResponse.status}`);
-        }
-        const initialStockList = await listResponse.json(); // 예: [{ ticker: '005930', stock_name: '삼성전자' }, ...]
+        try {
+            // 1. 추천 종목 목록 가져오기 (이름과 티커를 위해 필요)
+            const listResponse = await fetch(API_CONFIG.endpoints.recommendList(stockType));
+            if (!listResponse.ok) {
+                throw new Error(`추천 종목 목록 로딩 실패: ${listResponse.status}`);
+            }
+            const initialStockList = await listResponse.json(); // 예: [{ ticker: '005930', stock_name: '삼성전자' }, ...]
 
-        if (!Array.isArray(initialStockList) || initialStockList.length === 0) {
-            console.log(`추천 종목 목록이 비어있습니다 (${stockType}).`);
+            if (!Array.isArray(initialStockList) || initialStockList.length === 0) {
+                console.log(`추천 종목 목록이 비어있습니다 (${stockType}).`);
+                return [];
+            }
+
+            // 2. 새로운 bulk API로 모든 종목의 가격/변동률 정보 한 번에 가져오기
+            const allChangesResponse = await fetch(API_CONFIG.endpoints.getAllChanges(stockType));
+            if (!allChangesResponse.ok) {
+                throw new Error(`전체 가격 정보 로딩 실패: ${allChangesResponse.status}`);
+            }
+            const allChangesData = await allChangesResponse.json(); // 예: [{ ticker: '005930', changerate: { ... } }, ...]
+
+            // 3. 빠른 조회를 위해 가격/변동률 데이터를 Map 형태로 변환 (key: 티커)
+            const changesMap = new Map();
+            allChangesData.forEach(item => {
+                if (item.ticker && item.changerate) {
+                    changesMap.set(item.ticker, item.changerate);
+                }
+            });
+
+            // 4. 추천 종목 목록을 기준으로, Map에서 데이터를 합쳐 최종 데이터 생성
+            const finalChartData = initialStockList.map(stock => {
+                const changeInfo = changesMap.get(stock.ticker);
+                const priceValue = changeInfo ? changeInfo.yesterday_close : "N/A";
+                const changeRate = changeInfo ? changeInfo.change_rate : 0.0;
+
+                return {
+                    name: stock.stock_name,
+                    ticker: stock.ticker,
+                    price: typeof priceValue === 'number' ? priceValue : "N/A",
+                    change: typeof changeRate === 'number' ? changeRate : 0.0,
+                    logo: API_CONFIG.endpoints.stockLogo(stockType, stock.ticker),
+                };
+            });
+
+            return finalChartData;
+
+        } catch (e) {
+            console.error(`차트 데이터 로딩 중 전체 오류 발생 (${stockType}):`, e);
+            setError(`데이터 로딩 실패 (${stockType}): ${e.message}`);
             return [];
         }
-
-        // 2. 새로운 bulk API로 모든 종목의 가격/변동률 정보 한 번에 가져오기
-        const allChangesResponse = await fetch(API_CONFIG.endpoints.getAllChanges(stockType));
-        if (!allChangesResponse.ok) {
-            throw new Error(`전체 가격 정보 로딩 실패: ${allChangesResponse.status}`);
-        }
-        const allChangesData = await allChangesResponse.json(); // 예: [{ ticker: '005930', changerate: { ... } }, ...]
-
-        // 3. 빠른 조회를 위해 가격/변동률 데이터를 Map 형태로 변환 (key: 티커)
-        const changesMap = new Map();
-        allChangesData.forEach(item => {
-            if (item.ticker && item.changerate) {
-                changesMap.set(item.ticker, item.changerate);
-            }
-        });
-
-        // 4. 추천 종목 목록을 기준으로, Map에서 데이터를 합쳐 최종 데이터 생성
-        const finalChartData = initialStockList.map(stock => {
-            const changeInfo = changesMap.get(stock.ticker);
-            const priceValue = changeInfo ? changeInfo.yesterday_close : "N/A";
-            const changeRate = changeInfo ? changeInfo.change_rate : 0.0;
-
-            return {
-                name: stock.stock_name,
-                ticker: stock.ticker,
-                price: typeof priceValue === 'number' ? priceValue : "N/A",
-                change: typeof changeRate === 'number' ? changeRate : 0.0,
-                logo: API_CONFIG.endpoints.stockLogo(stockType, stock.ticker),
-            };
-        });
-
-        return finalChartData;
-
-    } catch (e) {
-        console.error(`차트 데이터 로딩 중 전체 오류 발생 (${stockType}):`, e);
-        setError(`데이터 로딩 실패 (${stockType}): ${e.message}`);
-        return [];
-    }
-}, []); // 종속성 배열은 비어있어도 괜찮습니다.
+    }, []); // 종속성 배열은 비어있어도 괜찮습니다.
 
     useEffect(() => {
         const loadAllData = async () => {
@@ -149,10 +149,11 @@ export default function StockTable() {
     const endIndex = startIndex + ITEMS_PER_PAGE;
     const currentChartPageData = allChartData.slice(startIndex, endIndex);
 
-    const handleFavoriteClick = (e, stockName) => {
-        e.stopPropagation();
-        console.log(`${stockName} 찜 상태 변경됨`);
-    };
+    // 찜하기 버튼 클릭 핸들러 제거
+    // const handleFavoriteClick = (e, stockName) => {
+    //     e.stopPropagation();
+    //     console.log(`${stockName} 찜 상태 변경됨`);
+    // };
 
     const handlePageChange = (page) => {
         if (page === 'prev') setCurrentPage((prev) => Math.max(prev - 1, 1));
@@ -232,7 +233,8 @@ export default function StockTable() {
                                     <th>종목</th>
                                     <th>전일종가</th> {/* 헤더는 항상 '전일종가' */}
                                     <th>등락률</th>
-                                    <th className="favorite-header"></th>
+                                    {/* 찜하기 헤더 제거 */}
+                                    {/* <th className="favorite-header"></th> */}
                                 </tr>
                             </thead>
                             <tbody>
@@ -258,9 +260,10 @@ export default function StockTable() {
                                         <td className={stock.change >= 0 ? "positive" : "negative"}>
                                             {stock.change >= 0 ? '+' : ''}{stock.change.toFixed(1)}%
                                         </td>
-                                        <td className="favorite-cell">
+                                        {/* 찜하기 셀 제거 */}
+                                        {/* <td className="favorite-cell">
                                             <span className="favorite-icon" onClick={(e) => handleFavoriteClick(e, stock.name)} title={`${stock.name} 찜하기`}>♥</span>
-                                        </td>
+                                        </td> */}
                                     </tr>
                                 ))}
                             </tbody>
@@ -300,7 +303,7 @@ export default function StockTable() {
                     <div className="change-rank-body-wrapper">
                         <table>
                             <thead>
-                                <tr><th>종목</th><th>등락률</th><th className="favorite-header"></th></tr>
+                                <tr><th>종목</th><th>등락률</th>{/* 찜하기 헤더 제거 */}{/* <th className="favorite-header"></th> */}</tr>
                             </thead>
                             <tbody>
                                 {currentChangeRankData.map((stock, index) => (
@@ -319,9 +322,10 @@ export default function StockTable() {
                                         <td className={stock.change >= 0 ? "positive" : "negative"}>
                                             {stock.change >= 0 ? '+' : ''}{stock.change.toFixed(1)}%
                                         </td>
-                                        <td className="favorite-cell">
+                                        {/* 찜하기 셀 제거 */}
+                                        {/* <td className="favorite-cell">
                                             <span className="favorite-icon" onClick={(e) => handleFavoriteClick(e, stock.name)} title={`${stock.name} 찜하기`}>♥</span>
-                                        </td>
+                                        </td> */}
                                     </tr>
                                 ))}
                             </tbody>

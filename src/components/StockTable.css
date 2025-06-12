@@ -1,95 +1,442 @@
+/* ChartSection.css */
+
+/* ... (기존 스타일은 여기에 유지) ... */
+
+body, html {
+    margin: 0;
+    padding: 0;
+    background-color: #f9f9f9;
+    font-family: sans-serif; /* 기본 폰트 설정 */
+}
+
+.chart-section {
+    background-color: #ffffff;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    min-height: 82vh; /* 최소 높이 유지 */
+    display: flex;
+    flex-direction: column;
+}
+
+/* ===== 종목 정보 헤더 스타일 ===== */
+.chart-header-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #eee;
+}
+
+/* 로고 이미지를 위한 컨테이너 추가 (선택사항, 텍스트 대체 시 유용) */
+.image-placeholder-container {
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.image-placeholder { /* 로고 이미지 또는 텍스트 대체용 div */
+    width: 50px;
+    height: 50px;
+    background-color: #e0e0e0;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: #666;
+    flex-shrink: 0;
+    object-fit: contain; /* 로고 이미지가 있을 경우 비율 유지 */
+}
+
+.stock-info-text {
+    display: flex;
+    flex-direction: column;
+}
+
+/* 종목명과 찜하기 버튼을 함께 묶는 컨테이너 */
+.stock-name-and-favorite {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* 종목명과 별 아이콘 사이 간격 */
+    margin-bottom: 4px; /* 기존 stock-name의 margin-bottom과 유사하게 조정 */
+}
+
+.stock-name {
+    font-size: 1.4em;
+    font-weight: bold;
+    color: #333;
+    /* margin-bottom: 4px; Removed as it's now inside stock-name-and-favorite */
+}
+
+/* 찜하기 버튼 스타일 (제거 대상) */
+/* .favorite-button {
+    margin-top: 3px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.4em;
+    color: #ccc;
+    padding: 0;
+    line-height: 1;
+    transition: color 0.2s ease, transform 0.1s ease;
+}
+
+.favorite-button.favorited {
+    color: #FFD700;
+    text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+}
+
+.favorite-button:hover {
+    transform: scale(1.1);
+}
+
+.favorite-button:active {
+    transform: scale(0.95);
+} */
+
+
+.stock-price-details {
+    display: flex;
+    align-items: center; /* 현재가와 등락률 세로 정렬 */
+}
+
+.stock-price {
+    font-size: 1.2em;
+    color: #555;
+}
+
+.stock-change {
+    font-weight: 600;
+    font-size: 0.9em; /* 현재가보다 약간 작게 표시 */
+    margin-left: 8px;
+}
+
+.stock-change.positive {
+    color: #e74c3c; /* 좀 더 선명한 빨간색 */
+}
+
+.stock-change.negative {
+    color: #3498db; /* 좀 더 선명한 파란색 */
+}
+
+/* ============================ */
+
+.chart-layout-container {
+    display: flex;
+    margin-left: 20px; /* 기존 유지 */
+    flex-grow: 1;
+    gap: 20px;
+    align-items: flex-start;
+}
+
+.chart-iframe-container {
+    flex-grow: 1; /* 차트 영역이 가능한 많은 공간을 차지하도록 */
+    /* 필요한 경우 max-width 설정 */
+}
+
+.chart-iframe {
+    width: 1000px; /* 부모 컨테이너에 맞춤 */
+    max-width: 800px; /* 최대 너비 제한 (기존값 유지 또는 조정) */
+    height: 500px; /* 높이 유지 */
+    border: 1px solid #ccc;
+    display: block;
+}
+
+/* 컨트롤/버튼 영역 */
+.chart-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 15px; /* 카드 사이 간격 증가 */
+    min-width: 220px; /* 카드 내용에 맞게 너비 조정 */
+    padding: 10px;
+    /* background-color: #f9f9f9; */ /* 컨트롤 영역 배경색 (선택) */
+    /* border-radius: 8px; */ /* 컨트롤 영역 모서리 (선택) */
+}
+
+.chart-controls h3 {
+    margin-top: 0;
+    margin-bottom: 10px; /* 제목과 카드 사이 간격 */
+    text-align: left; /* 제목 왼쪽 정렬 */
+    font-size: 1.2em; /* 제목 크기 조정 */
+    color: #333;
+    font-weight: 600;
+}
+
+/* AI 분석 카드 스타일 */
+.ai-analysis-card {
+    background-color: #f8f9fa; /* 카드 배경색 (이미지와 유사하게) */
+    border: 1px solid #e0e0e0; /* 연한 테두리 */
+    border-radius: 8px; /* 둥근 모서리 */
+    padding: 15px;
+    display: flex; /* 아이콘과 내용을 가로로 배치 */
+    align-items: flex-start; /* 아이콘과 내용을 상단 기준으로 정렬 */
+    gap: 12px; /* 아이콘과 내용 사이 간격 */
+    cursor: pointer;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ai-analysis-card:hover {
+    background-color: #e9ecef; /* 호버 시 배경색 변경 */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* 약간의 그림자 효과 */
+}
+
+.ai-analysis-card.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background-color: #f0f0f0; /* 비활성화 시 배경색 */
+}
+
+.ai-analysis-card.disabled:hover {
+    background-color: #f0f0f0; /* 비활성화 시 호버 효과 제거 */
+    box-shadow: none;
+}
+
+.ai-card-icon {
+    font-size: 1.8em; /* 아이콘 크기 */
+    color: #4a90e2; /* 아이콘 색상 (예시) */
+    flex-shrink: 0;
+    margin-top: 2px; /* 제목과 세로 정렬 미세 조정 */
+}
+
+.ai-card-content {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+.ai-card-title {
+    font-size: 1.1em;
+    font-weight: bold;
+    color: #333;
+    margin-top: 0;
+    margin-bottom: 5px; /* 제목과 설명 사이 간격 */
+}
+
+.ai-card-description {
+    font-size: 0.85em;
+    color: #555;
+    margin: 0;
+    line-height: 1.4;
+}
+
+/* 뉴스 요약 결과 스타일 */
+.news-summaries-section {
+    margin-top: 25px;
+    padding: 15px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    background-color: #fdfdfd;
+}
+
+.news-summaries-section h4 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #333;
+    font-size: 1.15em;
+}
+
+.news-summary-item {
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+}
+.news-summary-item:last-child {
+    margin-bottom: 0;
+    border-bottom: none;
+}
+
+.news-summary-item h5 {
+    font-size: 1.05em;
+    color: #2c3e50;
+    margin-top: 0;
+    margin-bottom: 8px;
+}
+.news-summary-item p {
+    font-size: 0.9em;
+    color: #555;
+    line-height: 1.5;
+    margin-bottom: 5px;
+}
+.news-summary-item p strong {
+    color: #444;
+}
+.news-summary-item a {
+    color: #3498db;
+    text-decoration: none;
+}
+.news-summary-item a:hover {
+    text-decoration: underline;
+}
+
+/* 로딩, 정보, 에러 메시지 스타일 */
+.loading-message, .info-message, .error-message {
+    margin-top: 10px;
+    padding: 10px;
+    border-radius: 4px;
+    font-size: 0.9em;
+}
+.loading-message {
+    color: #555;
+    background-color: #f0f0f0;
+}
+.info-message {
+    color: #31708f;
+    background-color: #d9edf7;
+    border: 1px solid #bce8f1;
+}
+.error-message {
+    color: #a94442;
+    background-color: #f2dede;
+    border: 1px solid #ebccd1;
+}
+
+/* 반응형 디자인 (기존 CSS에 추가) */
+@media (max-width: 1200px) { /* 차트와 컨트롤 섹션이 세로로 정렬되도록 조정 */
+    .chart-layout-container {
+        flex-direction: column;
+        align-items: center;
+        margin-left: 0; /* 중앙 정렬을 위해 마진 제거 */
+    }
+    .chart-iframe {
+        max-width: 100%; /* 화면 너비에 맞춤 */
+        height: 400px; /* 모바일에서 차트 높이 조정 */
+    }
+    .chart-controls {
+        width: 100%; /* 컨트롤 섹션 너비 조정 */
+        min-width: unset; /* 최소 너비 제한 해제 */
+        max-width: 500px; /* 너무 넓어지지 않도록 최대 너비 설정 */
+    }
+}
+
+@media (max-width: 768px) {
+    .chart-section {
+        padding: 15px;
+    }
+    .chart-header-info {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    .stock-name {
+        font-size: 1.2em;
+    }
+    .stock-price {
+        font-size: 1em;
+    }
+    .stock-change {
+        font-size: 0.8em;
+    }
+    /* .favorite-button {
+        font-size: 1.5em;
+    } */
+    .ai-card-title {
+        font-size: 1em;
+    }
+    .ai-card-description {
+        font-size: 0.8em;
+    }
+    .chart-iframe {
+        height: 300px; /* 더 작은 화면에서 차트 높이 조정 */
+    }
+}
+
 /* 차트 & 변동순을 포함하는 전체 박스 */
 .stock-table {
-  background-color: #ffffff;
-  padding: 20px;
-  border-radius: 15px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  margin-bottom: 30px;
-  overflow: hidden; /* 전체 컨테이너의 불필요한 스크롤 방지 */
+    background-color: #ffffff;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    margin-bottom: 30px;
+    overflow: hidden; /* 전체 컨테이너의 불필요한 스크롤 방지 */
 }
 
 /* 차트 테이블 헤더 스타일 */
 .chart-header, .change-rank-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 15px;
-  margin-top: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    margin-top: 0;
 }
 
 .chart-header h2, .change-rank-header h2 {
-  margin: 0;
-  font-size: 1.2em;
-  font-weight: bold;
+    margin: 0;
+    font-size: 1.2em;
+    font-weight: bold;
 }
 
 /* 내부 테이블을 가로로 나누기 */
 .table-container {
-  display: flex;
-  justify-content: space-between;
-  height: 620px; /* 고정 높이 설정 */
-  position: relative;
+    display: flex;
+    justify-content: space-between;
+    height: 620px; /* 고정 높이 설정 */
+    position: relative;
 }
 
 /* 차트 테이블 영역 (테이블 + 페이지네이션 포함) */
 .chart-table {
-  width: 65%;
-  padding-right: 15px;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
+    width: 65%;
+    padding-right: 15px;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
 }
 
 /* 변동순 테이블 영역 */
 .change-rank {
-  width: 30%;
-  padding-left: 15px;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  /* overflow-y: auto;를 제거하고 내부 래퍼에서 스크롤을 제어합니다. */
+    width: 30%;
+    padding-left: 15px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    /* overflow-y: auto;를 제거하고 내부 래퍼에서 스크롤을 제어합니다. */
 }
 
 /* 스크롤을 위한 테이블 본문 래퍼 */
 .chart-table-body-wrapper, .change-rank-body-wrapper {
-  flex-grow: 1; /* 남은 공간을 모두 차지 */
-  overflow-y: auto; /* 이 영역만 스크롤되도록 설정 */
-  position: relative;
+    flex-grow: 1; /* 남은 공간을 모두 차지 */
+    overflow-y: auto; /* 이 영역만 스크롤되도록 설정 */
+    position: relative;
 }
 
 /* 테이블 공통 스타일 */
 .chart-table table, .change-rank table {
-  width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed;
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
 }
 
 .stock-table th,
 .stock-table td {
-  padding: 10px 12px;
-  border-bottom: 1px solid #f0f0f0;
-  text-align: left;
-  vertical-align: middle;
-  font-size: 0.9em;
+    padding: 10px 12px;
+    border-bottom: 1px solid #f0f0f0;
+    text-align: left;
+    vertical-align: middle;
+    font-size: 0.9em;
 }
 
 /* thead 고정 (스크롤 시에도 헤더가 보이도록) */
 .stock-table th {
-  font-weight: 600;
-  color: #555;
-  background-color: #fafafa;
-  position: sticky;
-  top: 0;
-  z-index: 1;
+    font-weight: 600;
+    color: #555;
+    background-color: #fafafa;
+    position: sticky;
+    top: 0;
+    z-index: 1;
 }
 
 /* 등락률 색상 및 굵기 */
 .stock-table .negative {
-  color: #338120; /* 파란색으로 변경 */
+    color: #338120; /* 파란색으로 변경 */
 }
 
 .stock-table .positive {
-  color: #ff0000; /* 빨간색으로 변경 */
+    color: #ff0000; /* 빨간색으로 변경 */
 }
 
 .stock-table .negative, .stock-table .positive {
@@ -98,128 +445,128 @@
 
 /* 행 호버 효과 */
 .stock-table tbody .stock-row:hover {
-  background-color: #f5f5f5;
-  cursor: pointer;
-  transition: background-color 0.15s ease-in-out;
+    background-color: #f5f5f5;
+    cursor: pointer;
+    transition: background-color 0.15s ease-in-out;
 }
 
 /* 순위 컬럼 스타일 */
 .stock-table .rank-header, .stock-table .rank-cell {
-  width: 40px;
-  text-align: center;
+    width: 40px;
+    text-align: center;
 }
 .stock-table .rank-cell {
-  color: #666;
-  font-size: 0.85em;
+    color: #666;
+    font-size: 0.85em;
 }
 
-/* 찜 아이콘 관련 스타일 */
-.stock-table .favorite-header, .stock-table .favorite-cell {
-  text-align: center;
-  width: 50px;
+/* 찜 아이콘 관련 스타일 (제거 대상) */
+/* .stock-table .favorite-header, .stock-table .favorite-cell {
+    text-align: center;
+    width: 50px;
 }
 .stock-table .favorite-icon {
-  cursor: pointer;
-  color: #ccc;
-  font-size: 1.2em;
-  transition: color 0.2s ease, transform 0.2s ease;
-  display: inline-block;
+    cursor: pointer;
+    color: #ccc;
+    font-size: 1.2em;
+    transition: color 0.2s ease, transform 0.2s ease;
+    display: inline-block;
 }
 .stock-table .favorite-icon:hover {
-  color: #ff8a8a;
-  transform: scale(1.1);
-}
+    color: #ff8a8a;
+    transform: scale(1.1);
+} */
 
 /* 페이지네이션 스타일 */
 .pagination-controls {
-  display: flex;
-  justify-content: center; /* 중앙 정렬 */
-  align-items: center;
-  padding: 15px 0 0 0; /* 상단 패딩만 적용 */
-  flex-shrink: 0;
+    display: flex;
+    justify-content: center; /* 중앙 정렬 */
+    align-items: center;
+    padding: 15px 0 0 0; /* 상단 패딩만 적용 */
+    flex-shrink: 0;
 }
 
 .pagination-controls button,
 .pagination-controls span {
-  background-color: transparent;
-  border: none;
-  padding: 5px;
-  margin: 0 4px; /* 간격 조정 */
-  color: #555;
-  font-size: 0.9em; /* 폰트 크기 조정 */
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 28px;
-  height: 28px;
-  border-radius: 5px;
-  transition: background-color 0.2s ease, color 0.2s ease;
+    background-color: transparent;
+    border: none;
+    padding: 5px;
+    margin: 0 4px; /* 간격 조정 */
+    color: #555;
+    font-size: 0.9em; /* 폰트 크기 조정 */
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 28px;
+    border-radius: 5px;
+    transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .pagination-controls button:disabled {
-  color: #ccc;
-  cursor: not-allowed;
+    color: #ccc;
+    cursor: not-allowed;
 }
 
 .pagination-controls button:not(:disabled):not(.active):hover {
-  background-color: #f0f0f0;
+    background-color: #f0f0f0;
 }
 
 .pagination-controls button.active {
-  background-color: #007bff;
-  color: white;
-  font-weight: bold;
-  cursor: default;
+    background-color: #007bff;
+    color: white;
+    font-weight: bold;
+    cursor: default;
 }
 
 .pagination-controls span {
-  cursor: default;
+    cursor: default;
 }
 
 /* 로고와 종목명을 담는 셀 스타일 */
 .stock-name-cell {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .stock-logo {
-  width: 24px;
-  height: 24px;
-  object-fit: contain;
-  border-radius: 50%;
-  flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    border-radius: 50%;
+    flex-shrink: 0;
 }
 
 /* 정렬 버튼 공통 스타일 */
 .change-rank-controls button, .chart-rank-controls button {
-  background-color: #f0f0f0;
-  border: 1px solid #ddd;
-  padding: 5px 10px;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 0.85em;
-  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    background-color: #f0f0f0;
+    border: 1px solid #ddd;
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.85em;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
 .change-rank-controls button:hover, .chart-rank-controls button:hover {
-  background-color: #e9e9e9;
+    background-color: #e9e9e9;
 }
 
 .change-rank-controls button.active-sort, .chart-rank-controls button.active-sort {
-  background-color: #007bff;
-  color: white;
-  border-color: #007bff;
-  font-weight: bold;
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+    font-weight: bold;
 }
 
 .change-rank-controls, .chart-rank-controls {
-  display: flex;
-  gap: 8px;
+    display: flex;
+    gap: 8px;
 }
 
 /* 세로 구분선 */
@@ -234,8 +581,8 @@
 .chart-table th:nth-child(2), .chart-table td:nth-child(2) { width: auto; }  /* 종목 (가변) */
 .chart-table th:nth-child(3), .chart-table td:nth-child(3) { width: 120px; } /* 전일종가/현재가 */
 .chart-table th:nth-child(4), .chart-table td:nth-child(4) { width: 80px; }  /* 등락률 */
-.chart-table th:nth-child(5), .chart-table td:nth-child(5) { width: 50px; }  /* 찜 */
+/* .chart-table th:nth-child(5), .chart-table td:nth-child(5) { width: 50px; } */ /* 찜 (제거 대상) */
 
 .change-rank th:nth-child(1), .change-rank td:nth-child(1) { width: auto; } /* 종목 (가변) */
 .change-rank th:nth-child(2), .change-rank td:nth-child(2) { width: 80px; } /* 등락률 */
-.change-rank th:nth-child(3), .change-rank td:nth-child(3) { width: 50px; } /* 찜 */
+/* .change-rank th:nth-child(3), .change-rank td:nth-child(3) { width: 50px; } */ /* 찜 (제거 대상) */

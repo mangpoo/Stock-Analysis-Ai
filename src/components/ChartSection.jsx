@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react'; // useEffect를 import 합니다.
+import React, { useState, useEffect } from 'react';
 import './ChartSection.css';
 import ChartModal from './ChartModal';
-import API_CONFIG from '../config'; // 제공해주신 config.js를 import
+import API_CONFIG from '../config';
 
 export default function ChartSection({ ticker, stockName, stockPrice, stockChange, logoUrl, chartServerIp, stockCountryCode }) {
     const [summaries, setSummaries] = useState([]);
@@ -20,13 +20,51 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
     const [isLoadingConsolidatedAnalysis, setIsLoadingConsolidatedAnalysis] = useState(false);
     const [consolidatedAnalysisError, setConsolidatedAnalysisError] = useState(null);
 
-    // **MODIFICATION START**
-    // ticker prop이 변경될 때마다 이전 뉴스 요약 결과를 초기화합니다.
+    // 찜하기 상태 추가 (디자인만)
+    const [isFavorite, setIsFavorite] = useState(false);
+
     useEffect(() => {
-        setSummaries([]); // 뉴스 요약 목록을 비웁니다.
-        setSummaryError(null); // 에러 메시지를 초기화합니다.
-    }, [ticker]); // 의존성 배열에 ticker를 추가하여, ticker가 바뀔 때마다 이 effect가 실행되도록 합니다.
-    // **MODIFICATION END**
+        setSummaries([]);
+        setSummaryError(null);
+        // ticker 변경 시 찜하기 상태도 초기화하거나, 실제 데이터 연동 시에는 여기서 DB에서 찜하기 여부를 불러와야 합니다.
+        // 지금은 디자인만 하는 것이므로, 일단 false로 초기화합니다.
+        setIsFavorite(false);
+    }, [ticker]);
+
+    // 최근 본 종목 저장 코드 ( 로그인한 사용자가 들어오면 DB 연동으로 최근 본 종목 저장 )
+    useEffect(() => {
+        const jwtToken = localStorage.getItem('jwt_token');
+        if (!jwtToken || !ticker) return;
+
+        const sendRecentStock = async () => {
+            try {
+                const response = await fetch(`https://ddolddol2.duckdns.org/api/recent`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${jwtToken}`
+                    },
+                    body: JSON.stringify({ stock_code: ticker })
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.warn(`❌ 최근 본 종목 저장 실패: ${response.status} - ${errorText}`);
+                } else {
+                    const resJson = await response.json();
+                    if (resJson.status === 'ok') {
+                        console.log(`✅ 최근 본 종목 저장 성공: ${ticker}`);
+                    } else {
+                        console.warn(`⚠️ 응답 수신은 성공했으나 상태 비정상:`, resJson);
+                    }
+                }
+            } catch (error) {
+                console.error("❌ 최근 본 종목 POST 중 예외 발생:", error);
+            }
+        };
+
+        sendRecentStock();
+    }, [ticker]);
 
     // --- 차트 분석 핸들러 (백엔드 /api/analyze-price 사용) ---
     const handleChartAnalysis = async () => {
@@ -43,19 +81,17 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
         console.log(`차트 분석 요청 시작: ${stockCountryCode}/${ticker}`);
 
         try {
-            // 백엔드의 주가 분석 API 호출
             const analysisUrl = API_CONFIG.endpoints.chatGptAnalyzeChart(stockCountryCode, ticker);
             console.log(`백엔드 주가 분석 API 요청 URL: ${analysisUrl}`);
 
             const response = await fetch(analysisUrl);
 
             if (!response.ok) {
-                const errorData = await response.json(); // 백엔드에서 JSON 에러 응답을 기대
+                const errorData = await response.json();
                 throw new Error(`주가 분석 실패: ${response.status} - ${errorData.analysis || '알 수 없는 오류'}`);
             }
 
             const resultData = await response.json();
-            // 백엔드에서 'analysis' 필드에 분석 결과 텍스트가 담겨 있다고 가정
             setChartAnalysisResult(resultData.analysis || "분석 결과를 가져오지 못했습니다.");
             console.log("백엔드 주가 분석 결과:", resultData);
 
@@ -80,9 +116,8 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
         setSummaries([]);
 
         try {
-            let nameForNews = stockName; // 기본값으로 현재 종목명 사용
+            let nameForNews = stockName;
 
-            // 미국 주식일 경우, 한글 종목명을 조회
             if (stockCountryCode === 'us') {
                 console.log(`미국 종목(${ticker})의 한글 이름 조회를 시작합니다.`);
                 try {
@@ -102,10 +137,9 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
                     console.error("한글 이름 조회 중 오류 발생. 기존 종목명을 사용합니다:", error);
                 }
             }
-            
+
             console.log(`뉴스 요약 요청 시작: ${nameForNews} (국가: ${stockCountryCode})`);
 
-            // 결정된 이름(한글 또는 영문)으로 크롤러 API 호출
             const crawlerResponse = await fetch(API_CONFIG.endpoints.crawler(nameForNews));
             if (!crawlerResponse.ok) {
                 const errorData = await crawlerResponse.text();
@@ -129,7 +163,7 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
                     console.warn("경로 목록에 문자열이 아닌 요소가 포함되어 있습니다:", pathString);
                     return Promise.resolve(null);
                 }
-                
+
                 const fullSummaryUrl = `https://ddolddol2.duckdns.org/ai${pathString}`;
 
                 return fetch(fullSummaryUrl, { timeout: 20000 })
@@ -141,8 +175,6 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
                         return res.json();
                     })
                     .then(data => {
-                        // **MODIFICATION START**
-                        // HTML 엔티티를 올바른 문자로 디코딩하는 함수
                         const decodeHtmlEntities = (text) => {
                             if (!text) return '제목 없음';
                             const parser = new DOMParser();
@@ -151,7 +183,6 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
                         };
 
                         const decodedTitle = decodeHtmlEntities(data.title);
-                        // **MODIFICATION END**
 
                         return {
                             title: decodedTitle,
@@ -201,19 +232,17 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
         setIsLoadingConsolidatedAnalysis(true);
 
         try {
-            // 백엔드의 통합 분석 API 호출
             const analysisUrl = API_CONFIG.endpoints.chatGptConsolidatedAnalysis(stockCountryCode, ticker);
             console.log(`백엔드 통합 분석 API 요청 URL: ${analysisUrl}`);
 
             const response = await fetch(analysisUrl);
 
             if (!response.ok) {
-                const errorData = await response.json(); // 백엔드에서 JSON 에러 응답을 기대
+                const errorData = await response.json();
                 throw new Error(`통합 분석 실패: ${response.status} - ${errorData.analysis || '알 수 없는 오류'}`);
             }
 
             const resultData = await response.json();
-            // 백엔드에서 'analysis' 필드에 분석 결과 텍스트가 담겨 있다고 가정
             setConsolidatedAnalysisResult(resultData.analysis || "분석 결과를 가져오지 못했습니다.");
             console.log("백엔드 통합 분석 결과:", resultData);
 
@@ -225,7 +254,13 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
         }
     };
 
-    // ... (이하 나머지 컴포넌트 코드는 이전과 동일합니다) ...
+    // 찜하기 버튼 클릭 핸들러 (디자인만)
+    const handleToggleFavorite = () => {
+        setIsFavorite(!isFavorite);
+        // 여기에 실제 DB 연동 로직 (예: 서버 API 호출)이 들어갈 것입니다.
+        console.log(`찜하기 상태 변경: ${!isFavorite}`);
+    };
+
     const startDate = "20000101";
     const today = new Date();
     const year = today.getFullYear();
@@ -263,7 +298,16 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
                     <div className="image-placeholder">로고</div>
                 )}
                 <div className="stock-info-text">
-                    <span className="stock-name">{stockName || ticker}</span>
+                    <div className="stock-name-and-favorite"> {/* 새 div로 감싸기 */}
+                        <span className="stock-name">{stockName || ticker}</span>
+                        <button
+                            className={`favorite-button ${isFavorite ? 'favorited' : ''}`}
+                            onClick={handleToggleFavorite}
+                            title={isFavorite ? "찜 해제" : "찜하기"}
+                        >
+                            {isFavorite ? '★' : '☆'} {/* 찜 상태에 따라 별 아이콘 변경 */}
+                        </button>
+                    </div>
                     <div className="stock-price-details">
                         <span className="stock-price">{stockPrice}</span>
                         {typeof stockChange === 'number' && (
@@ -392,7 +436,7 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
                     {isLoadingConsolidatedAnalysis && <p className="loading-message">차트와 뉴스 데이터를 종합하여 분석 중입니다. 잠시만 기다려주세요...</p>}
                     {consolidatedAnalysisError && <p className="error-message">오류: {consolidatedAnalysisError}</p>}
                     {consolidatedAnalysisResult && !isLoadingConsolidatedAnalysis && !consolidatedAnalysisError && (
-                                     <pre className="analysis-text">{consolidatedAnalysisResult}</pre>
+                                       <pre className="analysis-text">{consolidatedAnalysisResult}</pre>
                     )}
                 </div>
             </ChartModal>
