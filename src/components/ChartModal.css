@@ -1,0 +1,260 @@
+/* src/components/ChartModal.css */
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.6); /* 뒤를 어둡게 만드는 오버레이 (조금 더 진하게) */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000; /* 다른 요소 위에 표시되도록 높은 z-index 설정 */
+}
+
+.modal-content {
+    background: #ffffff; /* ChartSection.css 배경색에 맞춤 */
+    color: #333; /* 텍스트 색상도 #333으로 맞춤 */
+    padding: 25px;
+    border-radius: 15px; /* ChartSection.css의 border-radius에 맞춤 */
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2); /* 그림자 효과 강화 */
+    width: 90%; /* 너비를 %로 설정하여 반응형으로 */
+    max-width: 1200px; /* 최대 너비 설정 */
+    max-height: 90vh; /* 최대 높이 설정 */
+    overflow-y: auto; /* 내용이 많아지면 스크롤 */
+    display: flex;
+    flex-direction: column;
+    animation: fadeIn 0.3s ease-out; /* 모달 나타날 때 애니메이션 추가 */
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px; /* ChartSection 헤더와 유사하게 조정 */
+    border-bottom: 1px solid #eee; /* ChartSection 헤더와 유사하게 조정 */
+}
+
+.modal-title {
+    margin: 0;
+    font-size: 1.8em;
+    font-weight: bold; /* 제목 굵게 */
+    color: #333; /* ChartSection의 제목 색상에 맞춤 */
+}
+
+.modal-close-button {
+    background: none;
+    border: none;
+    font-size: 2.5em; /* 닫기 버튼 크기 조정 */
+    color: #666; /* 기본 색상 조정 */
+    cursor: pointer;
+    padding: 0 10px;
+    transition: color 0.2s ease;
+}
+
+.modal-close-button:hover {
+    color: #e74c3c; /* ChartSection의 positive 색상과 유사하게 */
+}
+
+.modal-body {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: row; /* 차트와 분석 결과를 가로로 배치 */
+    gap: 25px; /* 요소들 간의 간격 증가 */
+}
+
+/* 차트와 분석 결과 섹션 */
+.modal-chart-display,
+.modal-analysis-result {
+    flex: 1; /* 각각 50%의 너비 */
+    min-width: 0;
+}
+
+.modal-chart-display iframe {
+    width: 100%;
+    height: 600px; /* iframe 높이 유지 */
+    border: 1px solid #ccc; /* ChartSection의 iframe border에 맞춤 */
+    border-radius: 8px; /* ChartSection의 border-radius와 유사하게 */
+    background-color: #f9f9f9; /* 차트 iframe 배경색 (로딩 중일 때) */
+}
+
+.modal-analysis-result {
+    background-color: #f8f9fa; /* ChartSection 카드 배경색과 유사하게 */
+    border: 1px solid #e0e0e0; /* ChartSection 카드 테두리와 유사하게 */
+    padding: 20px; /* 패딩 증가 */
+    border-radius: 8px;
+    box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.05); /* 내부 그림자 약하게 */
+    overflow-y: auto;
+    display: flex; /* 내용 정렬을 위해 flex 사용 */
+    flex-direction: column;
+}
+
+.modal-analysis-result h4 {
+    color: #333; /* ChartSection 제목 색상과 유사하게 */
+    font-size: 1.15em; /* ChartSection 뉴스 요약 제목과 유사하게 */
+    margin-top: 0;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee; /* 제목 아래 구분선 추가 */
+}
+
+.modal-analysis-result p {
+    white-space: pre-wrap; /* 줄바꿈 유지 */
+    font-size: 0.95em;
+    line-height: 1.6;
+    color: #555; /* ChartSection 본문 텍스트 색상과 유사하게 */
+}
+
+/* --- Loading and Error Message Styling --- */
+.modal-analysis-result .loading-message,
+.modal-analysis-result .error-message {
+    text-align: center;
+    font-style: italic;
+    margin-top: 20px;
+    padding: 15px 20px; /* Increased padding */
+    border-radius: 8px; /* Slightly more rounded */
+    font-size: 1em; /* Slightly larger font */
+    display: flex; /* Use flexbox for centering content vertically/horizontally */
+    align-items: center;
+    justify-content: center;
+    min-height: 100px; /* Give it some height */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05); /* Subtle shadow */
+    transition: all 0.3s ease; /* Smooth transitions */
+}
+
+.modal-analysis-result .loading-message {
+    color: #4CAF50; /* A pleasant green for loading */
+    background-color: #e8f5e9; /* Light green background */
+    border: 1px solid #c8e6c9; /* Matching border */
+    font-weight: bold; /* Make it bold */
+    animation: pulse 1.5s infinite alternate; /* Simple pulse animation */
+}
+
+@keyframes pulse {
+    from {
+        transform: scale(1);
+        opacity: 1;
+    }
+    to {
+        transform: scale(1.02);
+        opacity: 0.9;
+    }
+}
+
+.modal-analysis-result .error-message {
+    color: #a94442; /* ChartSection error-message color (reddish) */
+    background-color: #fce4e4; /* Lighter red background */
+    border: 1px solid #f0b0b0; /* Matching border */
+    font-weight: bold; /* Make it bold */
+}
+
+
+/* 모달 내 분석 결과 텍스트 스타일 */
+.modal-analysis-result .analysis-text {
+    /* pre 태그의 기본 스타일 (고정폭 폰트)은 유지 */
+    white-space: pre-wrap; /* 중요: 긴 텍스트가 컨테이너를 넘어가지 않고 자동으로 줄바꿈 되도록 */
+    word-wrap: break-word; /* 긴 단어가 줄바꿈 되도록 */
+    
+    font-size: 0.95em; /* 텍스트 크기 조정 */
+    line-height: 1.6; /* 줄 간격 넓혀 가독성 향상 */
+    color: #333; /* 텍스트 색상 */
+    
+    padding: 15px; /* 내부 패딩 추가 */
+    background-color: #ffffff; /* 배경색을 흰색으로 지정하여 가독성 높임 */
+    border: 1px solid #e9ecef; /* 테두리 추가 */
+    border-radius: 8px; /* 둥근 모서리 */
+    
+    /* 텍스트 정렬 및 여백 */
+    text-align: left; /* 텍스트 왼쪽 정렬 */
+    margin-top: 15px; /* 제목과의 간격 */
+    box-shadow: 0 1px 3px rgba(0,0,0,0.07); /* 은은한 그림자 추가 */
+}
+
+/* 추가적인 스타일: 목록, 볼드체 등 GPT 응답에 포함될 수 있는 요소에 대한 대비 */
+.modal-analysis-result .analysis-text strong {
+    font-weight: bold;
+    color: #2c3e50; /* 좀 더 진한 색상 */
+}
+
+.modal-analysis-result .analysis-text em {
+    font-style: italic;
+    color: #555;
+}
+
+.modal-analysis-result .analysis-text ul,
+.modal-analysis-result .analysis-text ol {
+    margin-top: 10px;
+    margin-bottom: 10px;
+    padding-left: 25px;
+}
+
+.modal-analysis-result .analysis-text li {
+    margin-bottom: 5px;
+    line-height: 1.5;
+}
+
+/* 분석 결과 내부의 제목 (만약 GPT가 h1, h2 등을 생성한다면) */
+.modal-analysis-result .analysis-text h1,
+.modal-analysis-result .analysis-text h2,
+.modal-analysis-result .analysis-text h3 {
+    color: #2c3e50;
+    margin-top: 20px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 5px;
+}
+
+.modal-analysis-result .analysis-text h1 { font-size: 1.6em; }
+.modal-analysis-result .analysis-text h2 { font-size: 1.4em; }
+.modal-analysis-result .analysis-text h3 { font-size: 1.2em; }
+
+/* 작은 화면을 위한 미디어 쿼리 */
+@media (max-width: 768px) {
+    .modal-body {
+        flex-direction: column; /* 세로로 배치 */
+    }
+    .modal-chart-display iframe {
+        height: 300px; /* 모바일에서 iframe 높이 조정 */
+    }
+    .modal-content {
+        width: 95%;
+        padding: 15px;
+        border-radius: 10px; /* 모바일에서는 조금 더 작게 */
+    }
+    .modal-title {
+        font-size: 1.4em;
+    }
+    .modal-header {
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+    }
+    .modal-analysis-result {
+        padding: 15px;
+    }
+    .modal-analysis-result h4 {
+        font-size: 1em;
+        margin-bottom: 10px;
+    }
+    .modal-analysis-result .loading-message,
+    .modal-analysis-result .error-message {
+        min-height: 80px; /* Adjust height for smaller screens */
+        padding: 10px;
+    }
+    .modal-analysis-result .analysis-text {
+        padding: 10px;
+        font-size: 0.9em;
+    }
+}

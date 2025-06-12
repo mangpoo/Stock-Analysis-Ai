@@ -1,0 +1,144 @@
+.app-container {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* --- 사이드 패널 공통 스타일 --- */
+.side-panel {
+  position: fixed;
+  top: 0;
+  left: 80px; /* Sidebar 너비만큼의 공간 확보 */
+  bottom: 0;
+  width: 300px;
+  background-color: #ffffff;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+  z-index: 999; /* Sidebar(1000)보다는 낮게 설정 */
+
+  /* 애니메이션 준비 (왼쪽 화면 밖으로 이동) */
+  transform: translateX(-100%);
+  transition: transform 0.3s ease-in-out;
+
+  display: flex;
+  flex-direction: column;
+}
+
+/* 패널이 열렸을 때 (open 클래스가 추가됐을 때) */
+.side-panel.open {
+  transform: translateX(0);
+}
+
+/* --- 패널 내부 스타일 --- */
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid #e0e0e0;
+  flex-shrink: 0;
+}
+
+.panel-header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 8px 12px; /* 충분한 클릭 영역을 위한 패딩 추가 */
+  line-height: 1; /* 텍스트 높이 조정 (현재 폰트 크기에 맞춤) */
+  color: #555;
+  /* 수직 정렬을 위해 flexbox를 활용하는 것이 좋습니다 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.panel-content {
+  padding: 20px;
+  flex-grow: 1;
+  overflow-y: auto;
+  margin-top: -30px;
+}
+
+.panel-content ul {
+  list-style: none;
+  padding: 0;
+  margin: 20px 0;
+}
+
+.panel-content li {
+  padding: 10px 5px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+/* AppLayout.css 파일에 아래 내용을 추가하세요 */
+
+.stock-list-item-custom {
+  display: flex;
+  align-items: center;
+  padding: 10px 15px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.stock-list-item-custom:hover {
+  background-color: #f9f9f9;
+}
+
+.stock-list-item-custom:last-child {
+  border-bottom: none;
+}
+
+.stock-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  margin-right: 12px;
+  object-fit: contain;
+  background-color: #e0e0e0; /* 로고 배경이 투명할 경우를 대비 */
+
+}
+
+.stock-info {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1; /* Allows stock-info to take available space */
+  min-width: 0; /* Ensures content within can shrink */
+}
+
+.stock-name {
+  font-weight: 600;
+  font-size: 15px; /* Slightly reduced font size */
+  color: #333;
+  white-space: nowrap; /* Prevent text wrapping */
+  overflow: hidden; /* Hide overflow content */
+  text-overflow: ellipsis; /* Add ellipsis for overflow */
+}
+
+.stock-ticker {
+  font-size: 0.8rem;
+  color: #888;
+}
+
+
+/* 삭제 버튼 스타일 */
+.remove-button {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  color: #bbb;
+  cursor: pointer;
+  padding-left: 10px;
+  margin-left: auto; /* 오른쪽 끝 정렬 */
+  flex-shrink: 0;
+  transition: color 0.2s ease-in-out;
+}
+
+.remove-button:hover {
+  color: #e74c3c; /* hover 시 빨간색으로 강조 */
+}

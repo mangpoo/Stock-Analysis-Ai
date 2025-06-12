@@ -3,13 +3,16 @@ import Sidebar from './Sidebar';
 import Header from './Header';
 import './MainLayout.css';
 
-export default function MainLayout({ children }) {
+export default function MainLayout({ children, onFavoriteClick, onRecentClick, isPanelOpen }) {
   return (
     <div className="main-layout">
-      <Sidebar />
-      <div className="main-content">
+      <Sidebar
+        onFavoriteClick={onFavoriteClick}
+        onRecentClick={onRecentClick}
+      />
+      <div className={`main-content-wrapper ${isPanelOpen ? 'panel-open' : ''}`}>
         <Header />
-        <div className="content-area">{children}</div>
+        <main className="content-area">{children}</main>
       </div>
     </div>
   );

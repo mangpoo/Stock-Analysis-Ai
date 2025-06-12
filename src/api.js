@@ -3,7 +3,7 @@ import axios from 'axios';
 
 // ✅ Flask 백엔드와 통신하는 axios 인스턴스 생성
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000', // 👉 배포 시 도메인으로 변경
+  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000', // 👉 배포 시 도메인으로 변경 -> .env 사용
   withCredentials: false,           // CORS 쿠키 안 쓸 거면 false
 });
 
