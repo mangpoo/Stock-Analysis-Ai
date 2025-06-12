@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react'; // useEffect를 import 합니다.
 import './ChartSection.css';
 import ChartModal from './ChartModal';
 import API_CONFIG from '../config'; // 제공해주신 config.js를 import
@@ -19,6 +19,14 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
     const [consolidatedAnalysisResult, setConsolidatedAnalysisResult] = useState(null);
     const [isLoadingConsolidatedAnalysis, setIsLoadingConsolidatedAnalysis] = useState(false);
     const [consolidatedAnalysisError, setConsolidatedAnalysisError] = useState(null);
+
+    // **MODIFICATION START**
+    // ticker prop이 변경될 때마다 이전 뉴스 요약 결과를 초기화합니다.
+    useEffect(() => {
+        setSummaries([]); // 뉴스 요약 목록을 비웁니다.
+        setSummaryError(null); // 에러 메시지를 초기화합니다.
+    }, [ticker]); // 의존성 배열에 ticker를 추가하여, ticker가 바뀔 때마다 이 effect가 실행되도록 합니다.
+    // **MODIFICATION END**
 
     // --- 차트 분석 핸들러 (백엔드 /api/analyze-price 사용) ---
     const handleChartAnalysis = async () => {
@@ -59,7 +67,7 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
         }
     };
 
-    // --- 뉴스 요약 핸들러 (MODIFIED) ---
+    // --- 뉴스 요약 핸들러 ---
     const handleNewsSummary = async () => {
         if (!ticker) {
             setSummaryError("종목 코드가 없습니다.");
@@ -81,16 +89,12 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
                     const krNameResponse = await fetch(API_CONFIG.endpoints.getKrName(ticker));
                     if (krNameResponse.ok) {
                         const krNameData = await krNameResponse.json();
-                        // **MODIFICATION START**
-                        // 한글 이름이 있고, 'N/A'가 아닐 때만 한글 이름 사용
                         if (krNameData.name && krNameData.name !== 'N/A') {
                             nameForNews = krNameData.name;
                             console.log(`뉴스 요약에 사용할 한글 이름: '${nameForNews}'`);
                         } else {
-                            // 받은 값이 'N/A'이거나 이름이 없는 경우, 원래 영문명을 사용
                             console.log(`'${ticker}'에 대한 유효한 한글 이름이 없습니다 (받은 값: ${krNameData.name}). 기존 영문명 '${stockName}'을(를) 사용합니다.`);
                         }
-                        // **MODIFICATION END**
                     } else {
                         console.warn(`한글 이름 조회 API 호출 실패. 기존 종목명 '${stockName}'을(를) 사용합니다.`);
                     }
@@ -136,13 +140,17 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
                         }
                         return res.json();
                     })
-                    .then(data => ({
-                        title: data.title || '제목 없음',
-                        issue: data.issue || '주요 이슈 정보 없음',
-                        impact: data.impact || '시장 영향 정보 없음',
-                        date: data.date || '날짜 없음',
-                        link: data.link || fullSummaryUrl
-                    }))
+                    .then(data => {
+                        const decodedTitle = data.title ? data.title.replaceAll('&quot;', '"') : '제목 없음';
+
+                        return {
+                            title: decodedTitle,
+                            issue: data.issue || '주요 이슈 정보 없음',
+                            impact: data.impact || '시장 영향 정보 없음',
+                            date: data.date || '날짜 없음',
+                            link: data.link || fullSummaryUrl
+                        };
+                    })
                     .catch(err => {
                         console.error(`뉴스 요약 처리 중 오류 [${fullSummaryUrl}]:`, err);
                         return null;
