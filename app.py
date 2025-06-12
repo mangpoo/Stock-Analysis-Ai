@@ -432,10 +432,10 @@ def get_stock_history(country, ticker, days=90):
         return []
 
 # 뉴스 데이터 가져오기 (5개)
-def get_news_data(ticker):
+def get_news_data(stock_name):
     """뉴스 요약 데이터 5개 가져오기"""
     try:
-        url = f"https://ddolddol2.duckdns.org/ai/crawler/{ticker}"
+        url = f"https://ddolddol2.duckdns.org/ai/crawler/{stock_name}"
         print(f"뉴스 요청: {url}")
 
         news_response = requests.get(url, timeout=30)
@@ -485,7 +485,7 @@ def analyze_stock(country, ticker, stock_name):
         print(f"{country}/{ticker} 통합 분석 시작")
 
         price_history = get_stock_history(country, ticker, days=90)
-        news_data = get_news_data(ticker)
+        news_data = get_news_data(stock_name)
 
         stock_data = {
             "stock_code": ticker,
