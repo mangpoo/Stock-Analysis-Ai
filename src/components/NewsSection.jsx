@@ -10,35 +10,24 @@ export default function NewsSection() {
     try {
       setLoading(true);
       setError(null);
-      
-      // 1. 최신 데이터 참조 정보 가져오기
-      const latestResponse = await fetch(`/news/latest.json?t=${new Date().getTime()}`);
-      
-      if (!latestResponse.ok) {
+
+      // Directly fetch news data from the provided endpoint
+      const newsResponse = await fetch(`https://ddolddol2.duckdns.org/api/get_main_news?t=${new Date().getTime()}`);
+
+      if (!newsResponse.ok) {
         throw new Error('최신 뉴스 정보를 불러올 수 없습니다.');
       }
-      
-      const latestInfo = await latestResponse.json();
-      console.log('최신 뉴스 정보:', latestInfo);
-      
-      // 2. 실제 뉴스 데이터 가져오기
-      const newsResponse = await fetch(`${latestInfo.data_path}?t=${new Date().getTime()}`);
-      
-      if (!newsResponse.ok) {
-        throw new Error('뉴스 데이터를 불러올 수 없습니다.');
+
+      const data = await newsResponse.json();
+
+      // Ensure the 'news' array exists in the fetched data
+      if (data && Array.isArray(data.news)) {
+        setNewsData(data);
+        console.log('뉴스 데이터 로드 완료:', data);
+      } else {
+        throw new Error('뉴스 데이터 형식이 올바르지 않습니다.');
       }
-      
-      const newsData = await newsResponse.json();
-      
-      // 3. 데이터 병합하여 상태 업데이트
-      setNewsData({
-        ...newsData,
-        current_date: latestInfo.current_date,
-        data_path: latestInfo.data_path
-      });
-      
-      console.log('뉴스 데이터 로드 완료:', newsData);
-      
+
     } catch (err) {
       console.error('뉴스 로딩 오류:', err);
       setError(err.message);
@@ -49,10 +38,10 @@ export default function NewsSection() {
 
   useEffect(() => {
     loadNews();
-    
+
     // 5분마다 자동 새로고침
     const interval = setInterval(loadNews, 5 * 60 * 1000);
-    
+
     return () => clearInterval(interval);
   }, []);
 
@@ -65,8 +54,8 @@ export default function NewsSection() {
       <div className="news-section">
         <div className="news-header">
           <h2>실시간 뉴스</h2>
-          <button 
-            className="refresh-btn" 
+          <button
+            className="refresh-btn"
             onClick={handleRefresh}
             disabled={loading}
           >
@@ -83,8 +72,8 @@ export default function NewsSection() {
       <div className="news-section">
         <div className="news-header">
           <h2>실시간 뉴스</h2>
-          <button 
-            className="refresh-btn" 
+          <button
+            className="refresh-btn"
             onClick={handleRefresh}
           >
             다시 시도
@@ -100,9 +89,13 @@ export default function NewsSection() {
   return (
     <div className="news-section">
       <div className="news-header">
-        <h2>주요 뉴스</h2>
+        <h2>실시간 뉴스</h2>
+        <div className="news-meta">
+            {/* Added refresh button here for consistency with loading/error states */}
+            
+        </div>
       </div>
-      
+
       <div className="news-content-wrapper">
         {newsData?.news?.length > 0 ? (
           <>
@@ -111,8 +104,8 @@ export default function NewsSection() {
               <div className="main-news">
                 <div className="main-news-image-container">
                   {newsData.news[0].image_url ? (
-                    <img 
-                      src={newsData.news[0].image_url} 
+                    <img
+                      src={newsData.news[0].image_url}
                       alt={newsData.news[0].title}
                       className="main-news-image"
                       onError={(e) => {
@@ -125,7 +118,7 @@ export default function NewsSection() {
                     이미지 없음
                   </div>
                   <div className="main-news-overlay">
-                    <h2 
+                    <h2
                       className="main-news-title"
                       onClick={() => window.open(newsData.news[0].link, '_blank')}
                     >
@@ -144,8 +137,8 @@ export default function NewsSection() {
                   <div key={index + 1} className="side-news-item">
                     <div className="side-news-image-container">
                       {news.image_url ? (
-                        <img 
-                          src={news.image_url} 
+                        <img
+                          src={news.image_url}
                           alt={news.title}
                           className="side-news-image"
                           onError={(e) => {
@@ -159,7 +152,7 @@ export default function NewsSection() {
                       </div>
                     </div>
                     <div className="side-news-content">
-                      <h3 
+                      <h3
                         className="side-news-title"
                         onClick={() => window.open(news.link, '_blank')}
                       >
