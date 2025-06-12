@@ -30,8 +30,17 @@ CREATE TABLE `favorite_stocks` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uniq_user_stock` (`user_id`,`stock_code`),
   CONSTRAINT `favorite_stocks_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `favorite_stocks`
+--
+
+LOCK TABLES `favorite_stocks` WRITE;
+/*!40000 ALTER TABLE `favorite_stocks` DISABLE KEYS */;
+/*!40000 ALTER TABLE `favorite_stocks` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `recent_stocks`
@@ -48,8 +57,18 @@ CREATE TABLE `recent_stocks` (
   PRIMARY KEY (`id`),
   KEY `user_id` (`user_id`),
   CONSTRAINT `recent_stocks_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `recent_stocks`
+--
+
+LOCK TABLES `recent_stocks` WRITE;
+/*!40000 ALTER TABLE `recent_stocks` DISABLE KEYS */;
+INSERT INTO `recent_stocks` VALUES (1,1,'005930','2025-05-30 23:33:58');
+/*!40000 ALTER TABLE `recent_stocks` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `users`
@@ -68,8 +87,18 @@ CREATE TABLE `users` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `email` (`email`),
   UNIQUE KEY `google_id` (`google_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `users`
+--
+
+LOCK TABLES `users` WRITE;
+/*!40000 ALTER TABLE `users` DISABLE KEYS */;
+INSERT INTO `users` VALUES (1,'1234567890abcdef','user@example.com','홍길동','https://example.com/img.jpg','2025-05-09 06:11:30'),(2,'110447585646777341226','2025810084@hknu.ac.kr','강지모','https://lh3.googleusercontent.com/a/ACg8ocIygBhvQYncfRpd0D2pytDfFhviDKkyoAnF0-ULPGFwfOHHbw=s96-c','2025-05-30 22:36:29');
+/*!40000 ALTER TABLE `users` ENABLE KEYS */;
+UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
@@ -80,4 +109,4 @@ CREATE TABLE `users` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-05-31  8:01:02
+-- Dump completed on 2025-06-02  0:24:38
