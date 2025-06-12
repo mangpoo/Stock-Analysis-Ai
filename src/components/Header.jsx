@@ -216,7 +216,7 @@ export default function Header() {
                             </ul>
                         ) : (
                             // 검색 결과가 없을 때만 메시지 표시
-                            <div className="search-message">{message || ''}</div>
+                            <div className="search-message"></div>
                         )}
                     </div>
                 )}

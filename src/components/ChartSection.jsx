@@ -141,7 +141,17 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
                         return res.json();
                     })
                     .then(data => {
-                        const decodedTitle = data.title ? data.title.replaceAll('&quot;', '"') : '제목 없음';
+                        // **MODIFICATION START**
+                        // HTML 엔티티를 올바른 문자로 디코딩하는 함수
+                        const decodeHtmlEntities = (text) => {
+                            if (!text) return '제목 없음';
+                            const parser = new DOMParser();
+                            const doc = parser.parseFromString(text, 'text/html');
+                            return doc.documentElement.textContent;
+                        };
+
+                        const decodedTitle = decodeHtmlEntities(data.title);
+                        // **MODIFICATION END**
 
                         return {
                             title: decodedTitle,
@@ -382,7 +392,7 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
                     {isLoadingConsolidatedAnalysis && <p className="loading-message">차트와 뉴스 데이터를 종합하여 분석 중입니다. 잠시만 기다려주세요...</p>}
                     {consolidatedAnalysisError && <p className="error-message">오류: {consolidatedAnalysisError}</p>}
                     {consolidatedAnalysisResult && !isLoadingConsolidatedAnalysis && !consolidatedAnalysisError && (
-                                  <pre className="analysis-text">{consolidatedAnalysisResult}</pre>
+                                     <pre className="analysis-text">{consolidatedAnalysisResult}</pre>
                     )}
                 </div>
             </ChartModal>
