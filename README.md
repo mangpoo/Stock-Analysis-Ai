@@ -180,3 +180,11 @@ curl -X GET https://ddolddol2.duckdns.org/recent \
 curl -X GET https://ddolddol2.duckdns.org/favorite \
 -H "Authorization: Bearer <JWT토큰>"
 ```
+
+---
+
+ **담당 개발자: 강지모 (Fancy-Branze)**
+
+---
+
+
