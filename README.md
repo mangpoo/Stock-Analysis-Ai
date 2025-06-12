@@ -43,16 +43,6 @@
 | user_id      | INT         | PRIMARY KEY, 외래키 (users.id)    | 사용자 ID                 |
 | recent_list  | TEXT        |                                    | 최근 본 종목 목록 (CSV 형태) |
 
-
-사용자가 최근에 본 종목을 기록합니다.
-
-| 컬럼명     | 자료형       | 제약조건                          | 설명                   |
-|------------|--------------|------------------------------------|------------------------|
-| id         | INT          | PRIMARY KEY, AUTO_INCREMENT        | 고유 번호               |
-| user_id    | INT          | FOREIGN KEY → users(id), NOT NULL | 사용자 ID (외래키)     |
-| stock_code | VARCHAR(20)  |                                    | 종목 코드               |
-| viewed_at  | TIMESTAMP    | DEFAULT CURRENT_TIMESTAMP          | 조회 시각               |
-
 ---
 
 ## 🔁 외래키 관계
