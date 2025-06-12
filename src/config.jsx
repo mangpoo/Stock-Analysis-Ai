@@ -54,11 +54,13 @@ const API_CONFIG = {
         // --- GPT 분석 엔드포인트 (Flask 백엔드 app.py에 정의된 API 사용) ---
         // 차트 분석 (주가 데이터만 사용하는 분석)
         // 백엔드 app.py의 @app.route('/api/analyze-price/<string:country>/<string:ticker>')
-        chatGptAnalyzeChart: (country, ticker) => `${BACKEND_API_HOST}/api/analyze-price/${country}/${ticker}`,
+        chatGptAnalyzeChart: (country, ticker, stockName) => `${BACKEND_API_HOST}/api/analyze-price/${country}/${ticker}/${encodeURIComponent(stockName)}`,
         
         // 통합 분석 (주가 데이터 + 뉴스 데이터를 사용하는 분석)
         // 백엔드 app.py의 @app.route('/api/analyze/<string:country>/<string:ticker>')
-        chatGptConsolidatedAnalysis: (country, ticker) => `${BACKEND_API_HOST}/api/analyze/${country}/${ticker}`,
+        // **MODIFICATION START**
+        chatGptConsolidatedAnalysis: (country, ticker, stockName) => `${BACKEND_API_HOST}/api/analyze/${country}/${ticker}/${encodeURIComponent(stockName)}`,
+        // **MODIFICATION END**
 
         // --- Google 로그인 및 인증 관련 엔드포인트 ---
         googleLoginCallback: () => `${AUTH_API_BASE_URL}/login`,
