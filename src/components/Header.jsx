@@ -127,7 +127,7 @@ export default function Header() {
                 const data = await res.json();
                 if (data.length === 0) {
                     setResults([]);
-                    setMessage('검색 결과가 없습니다.');
+                    
                 } else {
                     setResults(data);
                     setMessage('');

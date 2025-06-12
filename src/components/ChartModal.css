@@ -118,60 +118,53 @@
     color: #555; /* ChartSection 본문 텍스트 색상과 유사하게 */
 }
 
+/* --- Loading and Error Message Styling --- */
 .modal-analysis-result .loading-message,
 .modal-analysis-result .error-message {
     text-align: center;
     font-style: italic;
     margin-top: 20px;
-    padding: 10px;
-    border-radius: 4px;
-    font-size: 0.9em;
+    padding: 15px 20px; /* Increased padding */
+    border-radius: 8px; /* Slightly more rounded */
+    font-size: 1em; /* Slightly larger font */
+    display: flex; /* Use flexbox for centering content vertically/horizontally */
+    align-items: center;
+    justify-content: center;
+    min-height: 100px; /* Give it some height */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05); /* Subtle shadow */
+    transition: all 0.3s ease; /* Smooth transitions */
 }
 
 .modal-analysis-result .loading-message {
-    color: #555;
-    background-color: #f0f0f0;
+    color: #4CAF50; /* A pleasant green for loading */
+    background-color: #e8f5e9; /* Light green background */
+    border: 1px solid #c8e6c9; /* Matching border */
+    font-weight: bold; /* Make it bold */
+    animation: pulse 1.5s infinite alternate; /* Simple pulse animation */
 }
+
+@keyframes pulse {
+    from {
+        transform: scale(1);
+        opacity: 1;
+    }
+    to {
+        transform: scale(1.02);
+        opacity: 0.9;
+    }
+}
+
 .modal-analysis-result .error-message {
-    color: #a94442; /* ChartSection error-message 색상과 동일 */
-    background-color: #f2dede; /* ChartSection error-message 배경색과 동일 */
-    border: 1px solid #ebccd1; /* ChartSection error-message 테두리색과 동일 */
+    color: #a94442; /* ChartSection error-message color (reddish) */
+    background-color: #fce4e4; /* Lighter red background */
+    border: 1px solid #f0b0b0; /* Matching border */
+    font-weight: bold; /* Make it bold */
 }
 
 
-/* 작은 화면을 위한 미디어 쿼리 */
-@media (max-width: 768px) {
-    .modal-body {
-        flex-direction: column; /* 세로로 배치 */
-    }
-    .modal-chart-display iframe {
-        height: 300px; /* 모바일에서 iframe 높이 조정 */
-    }
-    .modal-content {
-        width: 95%;
-        padding: 15px;
-        border-radius: 10px; /* 모바일에서는 조금 더 작게 */
-    }
-    .modal-title {
-        font-size: 1.4em;
-    }
-    .modal-header {
-        margin-bottom: 15px;
-        padding-bottom: 10px;
-    }
-    .modal-analysis-result {
-        padding: 15px;
-    }
-    .modal-analysis-result h4 {
-        font-size: 1em;
-        margin-bottom: 10px;
-    }
-}
 /* 모달 내 분석 결과 텍스트 스타일 */
 .modal-analysis-result .analysis-text {
     /* pre 태그의 기본 스타일 (고정폭 폰트)은 유지 */
-    /* font-family: 'Consolas', 'Monaco', 'Courier New', monospace; */ /* 필요하다면 고정폭 폰트 지정 */
-
     white-space: pre-wrap; /* 중요: 긴 텍스트가 컨테이너를 넘어가지 않고 자동으로 줄바꿈 되도록 */
     word-wrap: break-word; /* 긴 단어가 줄바꿈 되도록 */
     
@@ -228,9 +221,38 @@
 .modal-analysis-result .analysis-text h2 { font-size: 1.4em; }
 .modal-analysis-result .analysis-text h3 { font-size: 1.2em; }
 
-/* 작은 화면을 위한 미디어 쿼리 (기존 유지) */
+/* 작은 화면을 위한 미디어 쿼리 */
 @media (max-width: 768px) {
-    /* ... (기존 미디어 쿼리 스타일 유지) ... */
+    .modal-body {
+        flex-direction: column; /* 세로로 배치 */
+    }
+    .modal-chart-display iframe {
+        height: 300px; /* 모바일에서 iframe 높이 조정 */
+    }
+    .modal-content {
+        width: 95%;
+        padding: 15px;
+        border-radius: 10px; /* 모바일에서는 조금 더 작게 */
+    }
+    .modal-title {
+        font-size: 1.4em;
+    }
+    .modal-header {
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+    }
+    .modal-analysis-result {
+        padding: 15px;
+    }
+    .modal-analysis-result h4 {
+        font-size: 1em;
+        margin-bottom: 10px;
+    }
+    .modal-analysis-result .loading-message,
+    .modal-analysis-result .error-message {
+        min-height: 80px; /* Adjust height for smaller screens */
+        padding: 10px;
+    }
     .modal-analysis-result .analysis-text {
         padding: 10px;
         font-size: 0.9em;

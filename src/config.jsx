@@ -2,8 +2,8 @@
 
 // 주식 데이터, 로고, 메인 API를 위한 기본 호스트 정보
 
-// const STOCK_SERVER_HOST = "http://16.184.17.9:5000";
-const STOCK_SERVER_HOST = "https://ddolddol2.duckdns.org/api";
+//const STOCK_SERVER_HOST = "http://43.202.156.210:5000";
+ const STOCK_SERVER_HOST = "https://ddolddol2.duckdns.org/api";
 
 // 외부 서비스 (예: 크롤러, 요약, 차트 분석, 통합 분석)를 위한 기본 호스트 정보
 // 플라스크 .env의 CRAWLER_SERVER_HOST와 동일한 주소입니다.

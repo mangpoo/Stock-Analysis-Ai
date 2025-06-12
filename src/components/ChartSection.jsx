@@ -73,40 +73,6 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
         setSummaries([]);
 
         try {
-            // 백엔드 app.py의 get_news_data 함수가 내부적으로 호출하는 크롤러 API를 프론트에서 직접 호출
-            // **주의:** app.py의 get_news_data 함수는 이미 뉴스 요약까지 백엔드에서 처리하고 있습니다.
-            // 따라서 이 handleNewsSummary 함수는 더 이상 필요 없을 수 있습니다.
-            // 통합 분석 시 백엔드의 `/api/analyze`가 모든 것을 처리하므로,
-            // 별도로 뉴스를 가져와서 `summaries` 상태에 저장할 필요가 없을 수 있습니다.
-            // 여기서는 기존 코드를 유지하되, 이 부분의 용도를 재고해볼 필요가 있음을 명시합니다.
-            // 만약 뉴스 요약을 별도로 프론트엔드에 표시해야 한다면 이 로직을 사용하지만,
-            // 통합 분석의 데이터로만 사용된다면 백엔드에 맡기는 것이 더 효율적입니다.
-
-            // 현재 app.py의 get_news_data가 SDS_SERVER_IP를 통해 뉴스를 가져오고 있으므로,
-            // 프론트엔드에서 직접 이 API_CONFIG.endpoints.crawler(ticker)를 호출하는 것은 중복일 수 있습니다.
-            // 통합 분석을 위해서는 백엔드 /api/analyze가 뉴스 크롤링까지 내부적으로 담당하게 됩니다.
-
-            // 이 부분은 필요에 따라 제거하거나, 만약 별도의 뉴스 요약 기능이 필요하다면
-            // 백엔드에서 뉴스 요약만 제공하는 API를 만들고 그 API를 호출하도록 변경해야 합니다.
-            // 현재 코드에서는 이 부분이 통합 분석과 직접적으로 연동되지는 않습니다 (별개 실행 버튼).
-            
-            // 임시로 news data가 app.py의 get_news_data에서 오는 것으로 가정하고 API_CONFIG를 사용하지 않고
-            // app.py의 뉴스 요약 기능을 직접 호출하는 것은 불가능하므로,
-            // 이 뉴스 요약 버튼의 목적이 'get_news_data'와 동일한 결과물을 프론트엔드에 보여주는 것이라면
-            // app.py에 뉴스 요약만 담당하는 새로운 엔드포인트 (예: /api/news-summary/<ticker>)를 만들고 그것을 호출해야 합니다.
-            // 현재 구조에서는 /api/analyze가 뉴스를 가져오므로, 이 `handleNewsSummary`는 비활성화하거나 수정해야 합니다.
-
-            // 여기서는 기존 `handleNewsSummary`의 로직을 그대로 두지만,
-            // 실제 배포 시에는 통합 분석이 모든 데이터를 포함하므로 이 기능의 필요성을 재검토해야 합니다.
-            
-            // 예시: 만약 백엔드에서 뉴스 요약만 가져오는 API가 있다면:
-            // const newsSummaryApiUrl = `${API_CONFIG.BACKEND_API_HOST}/api/news-summary/${ticker}`;
-            // const newsResponse = await fetch(newsSummaryApiUrl);
-            // if (!newsResponse.ok) { ... }
-            // const newsData = await newsResponse.json();
-            // setSummaries(newsData.summaries); // 백엔드에서 요약된 뉴스 목록을 반환한다고 가정
-            
-            // 현재 코드로 뉴스 크롤러를 직접 호출하는 로직 (기존):
             const crawlerResponse = await fetch(API_CONFIG.endpoints.crawler(ticker));
             if (!crawlerResponse.ok) {
                 const errorData = await crawlerResponse.text();
@@ -114,7 +80,7 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
             }
 
             const newsIdPathsObject = await crawlerResponse.json();
-            const actualNewsIdPaths = newsIdPathsObject.success || []; // 'success' 필드를 직접 참조
+            const actualNewsIdPaths = newsIdPathsObject.success || [];
 
             if (actualNewsIdPaths.length === 0) {
                 console.log("요약할 뉴스가 없습니다.");
@@ -125,39 +91,34 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
 
             console.log("가져온 뉴스 경로 목록 (처리 대상):", actualNewsIdPaths);
 
-            const summaryPromises = actualNewsIdPaths.slice(0, 5).map(pathString => { // app.py가 5개만 가져오므로 프론트도 5개로 제한
+            const summaryPromises = actualNewsIdPaths.slice(0, 5).map(pathString => {
                 if (typeof pathString !== 'string') {
                     console.warn("경로 목록에 문자열이 아닌 요소가 포함되어 있습니다:", pathString);
                     return Promise.resolve(null);
                 }
-                // pathString이 이미 완전한 URL이라고 가정합니다 (SDS_SERVER_IP/news/summary/<news_id> 형태)
-                // app.py의 get_news_data 함수는 이미 complete URL을 반환하므로,
-                // 여기서 다시 newsId를 추출하여 `getSummary`를 호출하는 방식은 app.py와 불일치합니다.
-                // app.py의 get_news_data는 이미 요약된 뉴스 객체를 반환합니다.
-                // 따라서 이 `handleNewsSummary`는 app.py의 `/crawler/{ticker}` 엔드포인트가
-                // 요약된 뉴스 객체를 직접 반환한다고 가정하고 수정해야 합니다.
-                // 하지만 현재 app.py의 get_news_data는 뉴스 URL 리스트를 먼저 반환하고,
-                // 이후 각 URL에 요청해서 요약을 가져오는 방식입니다.
-                // 이 프론트엔드의 `handleNewsSummary`도 동일한 방식으로 동작해야 합니다.
+                
+                // **MODIFICATION START**
+                // Prepend the full host for news summary requests to avoid mixed content issues
+                const fullSummaryUrl = `https://ddolddol2.duckdns.org/ai${pathString}`;
+                // **MODIFICATION END**
 
-                // app.py의 get_news_data와 동일하게 동작하도록 수정 (뉴스 URL을 받아서 요약 요청)
-                return fetch(pathString, { timeout: 20000 }) // app.py와 동일하게 timeout 설정 (없으면 추가)
+                return fetch(fullSummaryUrl, { timeout: 20000 })
                     .then(res => {
                         if (!res.ok) {
-                            console.error(`뉴스 요약 요청 실패 (${pathString}): ${res.status} ${res.statusText}`);
-                            return Promise.reject(new Error(`뉴스 요약 요청 실패 (${pathString})`));
+                            console.error(`뉴스 요약 요청 실패 (${fullSummaryUrl}): ${res.status} ${res.statusText}`);
+                            return Promise.reject(new Error(`뉴스 요약 요청 실패 (${fullSummaryUrl})`));
                         }
                         return res.json();
                     })
                     .then(data => ({
                         title: data.title || '제목 없음',
-                        issue: data.issue || '주요 이슈 정보 없음', // 'summary' 대신 'issue' 사용
-                        impact: data.impact || '시장 영향 정보 없음', // 'impact' 필드 추가
+                        issue: data.issue || '주요 이슈 정보 없음',
+                        impact: data.impact || '시장 영향 정보 없음',
                         date: data.date || '날짜 없음',
-                        link: data.link || pathString // API 응답에 link가 있으므로 그것을 우선 사용
+                        link: data.link || fullSummaryUrl
                     }))
                     .catch(err => {
-                        console.error(`뉴스 요약 처리 중 오류 [${pathString}]:`, err);
+                        console.error(`뉴스 요약 처리 중 오류 [${fullSummaryUrl}]:`, err);
                         return null;
                     });
             });
@@ -188,12 +149,6 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
         setConsolidatedAnalysisResult(null);
         setConsolidatedAnalysisError(null);
 
-        // 통합 분석은 백엔드에서 주가와 뉴스를 모두 가져오므로,
-        // 프론트엔드에서 차트 분석이나 뉴스 요약이 미리 실행될 필요는 없습니다.
-        // 다만, 사용자가 혼동하지 않도록 UI 상으로는 버튼 활성화/비활성화를 통해
-        // 차트/뉴스 분석을 먼저 수행하도록 유도할 수는 있습니다.
-        // 하지만 실제 API 호출 로직에서는 의존성을 제거합니다.
-        
         if (!ticker || !stockCountryCode) {
             setConsolidatedAnalysisError("종목 코드 또는 국가 정보가 없습니다. 통합 분석을 할 수 없습니다.");
             return;
@@ -315,7 +270,7 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
 
                     {/* 통합 분석 버튼 */}
                     {/* 통합 분석은 백엔드에서 모든 데이터를 가져오므로, 여기서는 단순히 API를 호출하면 됩니다.
-                                  UI 상의 'disabled' 조건은 사용자의 이해를 돕기 위함입니다. */}
+                                    UI 상의 'disabled' 조건은 사용자의 이해를 돕기 위함입니다. */}
                     <div 
                         className="ai-analysis-card" // 조건부 disabled 클래스는 제거하여 항상 클릭 가능하게 함
                         onClick={handleConsolidatedAnalysis}
@@ -343,8 +298,8 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
                            <div key={summary.link || index} className="news-summary-item">
                                 <h5>{summary.title || '제목 없음'}</h5>
                                 <p><strong>날짜:</strong> {summary.date || '정보 없음'}</p>
-                                <p><strong>주요 이슈:</strong> {summary.issue || '정보 없음'}</p> {/* 'summary.issue'를 사용 */}
-                                <p><strong>시장 영향:</strong> {summary.impact || '정보 없음'}</p> {/* 'summary.impact'를 사용하도록 주석 해제 */}
+                                <p><strong>주요 이슈:</strong> {summary.issue || '정보 없음'}</p>
+                                <p><strong>시장 영향:</strong> {summary.impact || '정보 없음'}</p>
                                 {summary.link && <p><a href={summary.link} target="_blank" rel="noopener noreferrer">원본 기사 보기</a></p>}
                             </div>
                         ) : (
@@ -397,7 +352,7 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
                     {isLoadingConsolidatedAnalysis && <p className="loading-message">차트와 뉴스 데이터를 종합하여 분석 중입니다. 잠시만 기다려주세요...</p>}
                     {consolidatedAnalysisError && <p className="error-message">오류: {consolidatedAnalysisError}</p>}
                     {consolidatedAnalysisResult && !isLoadingConsolidatedAnalysis && !consolidatedAnalysisError && (
-                           <pre className="analysis-text">{consolidatedAnalysisResult}</pre>
+                               <pre className="analysis-text">{consolidatedAnalysisResult}</pre>
                     )}
                 </div>
             </ChartModal>
