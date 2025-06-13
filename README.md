@@ -1,70 +1,98 @@
-# Getting Started with Create React App
+**📈 AI 기반 주식 분석 대시보드 [똘똘이]**
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+AI를 활용하여 복잡한 주식 정보를 시각화하고, 투자 결정에 도움을 주는 웹 기반 대시보드입니다.
 
-## Available Scripts
 
-In the project directory, you can run:
+사용자는 국내/해외 주식을 검색하고, 실시간 차트와 함께 AI가 요약한 최신 뉴스, 기술적 분석 리포트를 받아볼 수 있습니다.
 
-### `npm start`
+===========================================================================
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+**✨ 주요 기능 (Features)**
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+🔍 통합 검색: 국내 (KR) 및 미국 (US) 주식 정보를 실시간으로 검색합니다.
 
-### `npm test`
+📊 차트: 사용자가 원하는 기간의 주가 정보를 담은 동적 차트를 제공하며, 50일/200일 이동평균선을 시각화합니다.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+🤖 AI 차트 분석: 차트의 주요 패턴과 기술적 지표를 AI가 분석하여 매수/매도 전략 수립에 필요한 인사이트를 제공합니다.
 
-### `npm run build`
+📰 AI 뉴스 요약: 선택한 종목의 최신 뉴스를 크롤링하고, AI가 핵심 이슈와 시장 영향을 요약하여 제공합니다.
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+💡 AI 통합 분석: 차트, 뉴스 등 다양한 데이터를 종합적으로 분석하여 최종 투자 결정을 위한 리포트를 생성합니다.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+👤 사용자 기능: 구글 계정을 통한 소셜 로그인을 지원하며, 관심 종목을 등록하고 관리하는 '찜하기' 기능과 최근 본 기능을 제공합니다.
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+⚡ 실시간 뉴스 피드: 메인 화면에서 주요 경제 뉴스를 실시간으로 확인할 수 있습니다.
 
-### `npm run eject`
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+===========================================================================
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+**🛠️ 기술 스택 (Tech Stack)**
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+Frontend: React.js
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+State Management: React Hooks (useState, useEffect)
 
-## Learn More
+Backend: Flask
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+Database: MySQL
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+Authentication: Google OAuth 2.0, JWT (JSON Web Token)
 
-### Code Splitting
+Deployment: AWS
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
 
-### Analyzing the Bundle Size
+===========================================================================
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+**🚀 개발 히스토리 (Development History)**
 
-### Making a Progressive Web App
+**Jun 13, 2025**
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+- 최종 기능 통합 및 안정화 버전 커밋
 
-### Advanced Configuration
+**Jun 12, 2025**
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+- 찜(관심 종목) 기능 DB 연동 및 로직 개선
 
-### Deployment
+- AI 차트/통합 분석 기능 응답 처리 수정
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+- 메인 화면 실시간 뉴스 기능 구현 
 
-### `npm run build` fails to minify
+- 뉴스 요약 기능 안정화 (제목 특수문자 처리, 디자인 및 서버 연동 수정, 버그 픽스)
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+
+**Jun 11, 2025**
+
+- AI 차트 분석 및 통합 분석 기능 구현
+
+- 로그인 기능 버그 수정 및 안정화
+
+- 배포를 위한 API 주소 설정 관리
+
+
+**Jun 6, 2025**
+
+- 실시간 뉴스 기능 모듈 구현
+
+
+
+
+**May 30, 2025**
+
+- 구글 소셜 로그인 기능 구현
+
+- 국내(KR) 주식 검색 안되는 버그 수정
+
+
+**May 23-26, 2025**
+
+- 주식 검색 기능 및 AI 뉴스 요약 기능 초기 구현
+
+
+
+**Apr 11-24, 2025**
+
+- 프로젝트 초기 설정 및 메인/차트 페이지 UI/UX 구현
+
+- 로고 이미지 적용
+
+

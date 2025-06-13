@@ -378,6 +378,18 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
                         src={chartIframeSrc}
                         title={`${stockName || ticker} Stock Chart (${countryForChart.toUpperCase()})`}
                     ></iframe>
+                    {/* ===== 요청하신 범례 추가 부분 ===== */}
+                    <div className="chart-legend">
+                        <div className="legend-item">
+                            <span className="legend-color-box blue"></span>
+                            <span className="legend-text">50일 이동평균선</span>
+                        </div>
+                        <div className="legend-item">
+                            <span className="legend-color-box red"></span>
+                            <span className="legend-text">200일 이동평균선</span>
+                        </div>
+                    </div>
+                    {/* =============================== */}
                 </div>
                 <div className="chart-controls">
                     <h3>AI 분석</h3>
@@ -454,6 +466,18 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
                         src={chartIframeSrc}
                         title={`${stockName || ticker} Stock Chart (${countryForChart.toUpperCase()})`}
                     ></iframe>
+                    {/* ===== 요청하신 범례 추가 부분 ===== */}
+                    <div className="chart-legend">
+                        <div className="legend-item">
+                            <span className="legend-color-box blue"></span>
+                            <span className="legend-text">50일 이동평균선</span>
+                        </div>
+                        <div className="legend-item">
+                            <span className="legend-color-box red"></span>
+                            <span className="legend-text">200일 이동평균선</span>
+                        </div>
+                    </div>
+                    {/* =============================== */}
                 </div>
                 <div className="modal-analysis-result">
                     <h4>AI 차트 분석 결과</h4>
@@ -478,6 +502,18 @@ export default function ChartSection({ ticker, stockName, stockPrice, stockChang
                         src={chartIframeSrc}
                         title={`${stockName || ticker} Stock Chart (${countryForChart.toUpperCase()})`}
                     ></iframe>
+                    {/* ===== 요청하신 범례 추가 부분 ===== */}
+                    <div className="chart-legend">
+                        <div className="legend-item">
+                            <span className="legend-color-box blue"></span>
+                            <span className="legend-text">50일 이동평균선</span>
+                        </div>
+                        <div className="legend-item">
+                            <span className="legend-color-box red"></span>
+                            <span className="legend-text">200일 이동평균선</span>
+                        </div>
+                    </div>
+                    {/* =============================== */}
                 </div>
                 <div className="modal-analysis-result">
                     <h4>AI 통합 분석 결과</h4>

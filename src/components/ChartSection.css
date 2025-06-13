@@ -1,7 +1,5 @@
 /* ChartSection.css */
-
 /* ... (기존 스타일은 여기에 유지) ... */
-
 body, html {
     margin: 0;
     padding: 0;
@@ -124,28 +122,64 @@ body, html {
     color: #3498db; /* 좀 더 선명한 파란색 */
 }
 
-/* ============================ */
-
 .chart-layout-container {
     display: flex;
-    margin-left: 20px; /* 기존 유지 */
-    flex-grow: 1;
-    gap: 20px;
+    gap: 50px;
     align-items: flex-start;
+    width: 100%; /* 너비를 100%로 설정 */
+    max-width: 1500px; /* 차트와 컨트롤의 최대 너비를 고려한 값 */
+    flex-grow: 1;
 }
 
 .chart-iframe-container {
     flex-grow: 1; /* 차트 영역이 가능한 많은 공간을 차지하도록 */
-    /* 필요한 경우 max-width 설정 */
+    min-width: 0; /* flex 아이템이 수축할 수 있도록 허용 */
 }
 
 .chart-iframe {
-    width: 1000px; /* 부모 컨테이너에 맞춤 */
-    max-width: 800px; /* 최대 너비 제한 (기존값 유지 또는 조정) */
+    width: 100%; /* 고정 너비 대신 100%를 사용하여 부모 컨테이너에 맞춤 */
     height: 500px; /* 높이 유지 */
     border: 1px solid #ccc;
     display: block;
+    max-width: 1000px; /* 차트 자체가 너무 커지는 것을 방지 (기존 1000px 설정 반영) */
 }
+
+/* ===== 요청하신 범례 스타일 추가 부분 ===== */
+.chart-legend {
+    display: flex;
+    align-items: center;
+    gap: 20px; /* 각 범례 항목 사이의 간격 */
+    margin-top: 10px; /* 차트와의 간격 */
+    padding-left: 2px; /* 약간의 왼쪽 여백 */
+    font-family: sans-serif; /* 폰트 일관성 유지 */
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px; /* 색상 선과 텍스트 사이의 간격 */
+}
+
+.legend-color-box {
+    width: 25px; /* 선 길이 */
+    height: 2.5px;  /* 선 두께 */
+}
+
+.legend-color-box.blue {
+    background-color: #3498db; /* 파란색 */
+}
+
+.legend-color-box.red {
+    background-color: #e74c3c; /* 빨간색 */
+}
+
+.legend-text {
+    font-size: 12px; /* 텍스트 크기 */
+    color: #666; /* 텍스트 색상 */
+}
+/* ======================================= */
+
+/* ========= 수정된 부분 끝 ========= */
 
 /* 컨트롤/버튼 영역 */
 .chart-controls {
@@ -302,6 +336,13 @@ body, html {
         align-items: center;
         margin-left: 0; /* 중앙 정렬을 위해 마진 제거 */
     }
+
+    /* ========== 해결 코드 추가 ========== */
+    .chart-iframe-container {
+        width: 100%; /* 컨테이너 너비를 100%로 지정하여 축소 방지 */
+    }
+    /* ================================ */
+
     .chart-iframe {
         max-width: 100%; /* 화면 너비에 맞춤 */
         height: 400px; /* 모바일에서 차트 높이 조정 */

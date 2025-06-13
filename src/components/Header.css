@@ -84,6 +84,7 @@
     margin-right: 8px; /* 로고와 텍스트 사이 간격 */
     border-radius: 4px; /* 살짝 둥근 모서리 */
     object-fit: contain; /* 이미지 비율 유지 */
+    background-color: #e0e0e0;
 }
 
 /* 로그인 버튼 */

@@ -1,4 +1,3 @@
-// Header.js
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGoogleLogin } from '@react-oauth/google';
@@ -21,7 +20,7 @@ export default function Header() {
     // 로그인 삽입 1번 ==========
 
     // ✅ 페이지 새로고침 시 JWT 토큰으로 로그인 상태 유지
-    const { user, setUser } = useUser(); 
+    const { user, setUser } = useUser();
     useEffect(() => {
     const token = localStorage.getItem('jwt_token');
     if (token) {
@@ -40,7 +39,7 @@ export default function Header() {
       });
     }
   }, [setUser]);
-    
+
     // 로그인 삽입 1번 끝 ==========
 
     // 로그인 삽입 2번 ==========
@@ -66,6 +65,8 @@ export default function Header() {
           // 3단계: JWT 토큰 저장
           localStorage.setItem('jwt_token', jwtRes.data.token);
           console.log("✅ JWT 토큰 저장 완료");
+          // 로그인 성공 후 페이지 새로고침
+          window.location.reload(); // ✨ 추가된 부분
         } else {
           console.warn("⚠️ JWT 토큰이 응답에 없습니다.");
         }
@@ -82,9 +83,11 @@ export default function Header() {
     setUser(null);
     localStorage.removeItem('jwt_token'); // 저장된 토큰 제거
     console.log("🚪 로그아웃 완료");
+    // 로그아웃 후 페이지 새로고침
+    window.location.reload(); // ✨ 추가된 부분
   };
 
-  // 로그인 삽입 2번 끝 ==========
+    // 로그인 삽입 2번 끝 ==========
 
 
     useEffect(() => {
@@ -124,14 +127,13 @@ export default function Header() {
                 const data = await res.json();
                 if (data.length === 0) {
                     setResults([]);
-                    // 검색 결과가 없을 때 메시지를 표시
-                    setMessage('검색 결과가 없습니다.');
+
                 } else {
                     // **MODIFIED:** Transform results to include logo URLs
                     const resultsWithLogos = await Promise.all(data.map(async item => {
                         const countryCode = (item.source && item.source.toLowerCase().substring(0, 2) === 'kr') ? 'kr' : 'us';
                         const logoUrl = API_CONFIG.endpoints.stockLogo(countryCode, item.ticker);
-                        
+
                         // Check if the logo URL actually returns an image
                         try {
                             const logoRes = await fetch(logoUrl);
@@ -203,10 +205,10 @@ export default function Header() {
                                         style={{ cursor: 'pointer' }}
                                     >
                                         {item.logoUrl && (
-                                            <img 
-                                                src={item.logoUrl} 
-                                                alt={`${item.name} 로고`} 
-                                                className="search-result-logo" 
+                                            <img
+                                                src={item.logoUrl}
+                                                alt={`${item.name} 로고`}
+                                                className="search-result-logo"
                                                 onError={(e) => { e.target.style.display = 'none'; }} // 이미지 로드 실패 시 숨김
                                             />
                                         )}
