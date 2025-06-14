@@ -13,6 +13,8 @@ AWS EC2에서 **HTTPS 프로토콜**로 호스팅되며, **GPT 기반 투자 분
 
 👉 [https://ddolddol2.duckdns.org](https://ddolddol2.duckdns.org)
 
+ ! 현재는 서버를 가동하고 있지 않음 ( 높은 호스팅 비용 지출 부담 )
+
 ---
 
 ## 📁 프로젝트 구조
