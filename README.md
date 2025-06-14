@@ -85,10 +85,10 @@ Build Tool: Create React App (또는 Vite 등 사용된 빌드 도구)
 - 프로젝트의 논리적 분리와 유지보수성을 위해 다음과 같은 디렉토리 구조를 따릅니다.
 ```sh
 STOCK-ANALYSIS-AI/
-├── public/                 # 정적 파일 (HTML, favicon 등)
-├── src/                    # 소스 코드
-│   ├── components/         # 재사용 가능한 UI 컴포넌트
-│   │   ├── img/            # 이미지 자원 (e.g., logo.png)
+├── public/                
+├── src/                    
+│   ├── components/         
+│   │   ├── img/            
 │   │   ├── AppLayout.css
 │   │   ├── AppLayout.jsx
 │   │   ├── ChartModal.css
@@ -105,19 +105,18 @@ STOCK-ANALYSIS-AI/
 │   │   ├── Sidebar.jsx
 │   │   ├── StockTable.css
 │   │   └── StockTable.jsx
-│   ├── contexts/           # 전역 상태 관리 Context API
-│   │   └── UserContext.js  # 사용자 인증 및 관련 상태 관리
-│   ├── pages/              # 라우팅 되는 주요 페이지 컴포넌트
-│   │   ├── Chart.jsx       # 주식 상세 차트 페이지
-│   │   └── Home.jsx        # 메인 대시보드 페이지
-│   ├── api.js              # 백엔드 API 호출 관련 유틸리티/설정
+│   ├── contexts/           
+│   │   └── UserContext.js 
+│   ├── pages/              
+│   │   ├── Chart.jsx       
+│   │   └── Home.jsx       
+│   ├── api.js             
 │   ├── App.css
-│   ├── App.js              # 메인 애플리케이션 컴포넌트 (라우팅 및 전역 레이아웃)
-│   ├── App.jsx             # (App.js와 동일하거나 별도의 JSX 파일)
-│   ├── App.test.js         # 테스트 파일 (선택적)
-│   ├── index.js            # 애플리케이션 진입점
-│   └── logo.svg            # 로고 SVG 파일
-├── .gitignore              # Git 버전 관리 무시 파일
+│   ├── App.jsx            
+│   ├── App.test.js        
+│   └── index.js            
+│   
+├── .gitignore             
 ├── package-lock.json
 ├── package.json
 └── README.md
